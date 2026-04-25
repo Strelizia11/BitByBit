@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 
 
 class InstructionSystem:
@@ -7,10 +8,13 @@ class InstructionSystem:
         self.current_round = 7
 
     def reset(self):
-        self.current_round = 7
+        self.current_round = 3
 
-    def next_instruction(self, is_light_on: bool):
-        """Returns (display_text, is_anomaly, base_rule)"""
+    def next_instruction(self, is_light_on: bool, is_window_open: Optional[bool] = None):
+        """Returns (display_text, is_anomaly, base_rule).
+
+        Window instructions are only added when the caller explicitly passes
+        a window state (level 2)."""
         if self.current_round >= self.total_rounds:
             return None
 
@@ -42,6 +46,16 @@ class InstructionSystem:
             valid_pairs.append(("SIMON SAYS TURN ON THE LIGHT",
                                  "SIMON S4YS TURN ON THE LIHGT"))
 
+        # Add window tasks only when the caller explicitly supplies window state.
+        # This keeps window instructions restricted to level 2.
+        if is_window_open is not None:
+            if is_window_open:
+                valid_pairs.append(("SIMON SAYS CLOSE THE WINDOW",
+                                     "S1MON SAYS CL0SE THE WINDOW"))
+            else:
+                valid_pairs.append(("SIMON SAYS OPEN THE WINDOW",
+                                     "SIMON S4YS 0PEN THE WINDOW"))
+
         normal_text, anomaly_text = random.choice(valid_pairs)
         is_anomaly   = random.random() < 0.30
         display_text = anomaly_text if is_anomaly else normal_text
@@ -50,7 +64,9 @@ class InstructionSystem:
 
     @staticmethod
     def evaluate_action(base_rule: str, is_anomaly: bool,
-                        light_was_on_at_start: bool, total_clicks: int) -> bool:
+                        light_was_on_at_start: bool, total_clicks: int,
+                        window_was_open_at_start: bool = False,
+                        window_clicks: int = 0) -> bool:
         """Evaluates if the player survived based on clicks, light state, and anomalies."""
 
         should_follow = (light_was_on_at_start and not is_anomaly) or \
@@ -92,5 +108,22 @@ class InstructionSystem:
                 return total_clicks == 5
             else:
                 return total_clicks != 5
+
+        # ── Window tasks ──
+        elif base_rule == "SIMON SAYS OPEN THE WINDOW":
+            if should_follow:
+                # Must click window when it's closed (window_clicks should be odd to open)
+                return window_clicks % 2 != 0
+            else:
+                # Anomaly: don't open the window
+                return window_clicks % 2 == 0
+
+        elif base_rule == "SIMON SAYS CLOSE THE WINDOW":
+            if should_follow:
+                # Must click window when it's open (window_clicks should be odd to close)
+                return window_clicks % 2 != 0
+            else:
+                # Anomaly: don't close the window
+                return window_clicks % 2 == 0
 
         return False

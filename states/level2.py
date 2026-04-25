@@ -23,17 +23,6 @@ ANOMALY_COL = (220, 220, 220)
 FOLLOW_COL = GREEN_BRIGHT
 IGNORE_COL = BLOOD_RED
 
-# ── Anomaly types ─────────────────────────────────────────────────────────────
-# Each round picks ONE form to deliver the anomaly signal:
-#   NONE   → normal text, no silhouette → follow the text
-#   TEXT   → glitchy text, no silhouette → ignore the text  (same as level 1)
-#   WINDOW → normal text shown, silhouette appears instead  → also ignore the text
-# TEXT and WINDOW are mechanically identical — both mean is_anomaly=True.
-# The silhouette is just a visual replacement for the glitchy spelling.
-ANOMALY_NONE = 0
-ANOMALY_TEXT = 1
-ANOMALY_WINDOW = 2
-
 # Window position — left of switch, vertically centred
 WIN_W, WIN_H = 110, 150
 WIN_X = CX - 160 - WIN_W
@@ -42,9 +31,10 @@ WIN_Y = CY - WIN_H // 2 + 30
 
 class Level2State(BaseState):
     """
-    Level 2 gameplay with 8 rounds and window anomaly.
-    Starts with light OFF. Features both TEXT and WINDOW anomalies
-    (cannot appear at same time). After completion, returns to menu.
+    Level 2 gameplay with 8 rounds and interactive window.
+    Starts with light OFF and window CLOSED.
+    Players must follow instructions to click the switch or open/close the window.
+    After completion, returns to menu.
     """
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -75,6 +65,10 @@ class Level2State(BaseState):
         self.light_on = False
         self.is_clicked = False
 
+        # --- window state: START WITH CLOSED ---
+        self.window_open = False
+        self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
+
         self.instr_sys = InstructionSystem(total_rounds=8)
         self.instr_sys.reset()
 
@@ -82,10 +76,11 @@ class Level2State(BaseState):
         self.round_time_limit = 6.0
         self.round_timer = 0.0
         self.clicks_this_round = 0
+        self.window_clicks_this_round = 0
         self.start_light_state = self.light_on
+        self.start_window_state = self.window_open
 
         self.current_text = ""
-        self.current_anomaly_type = ANOMALY_NONE  # NONE, TEXT, or WINDOW
         self.current_is_anomaly = False
         self.game_over = False
 
@@ -103,13 +98,6 @@ class Level2State(BaseState):
         self.death_img = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
         self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
 
-        # --- window anomaly ---
-        # Positioned left of the switch; silhouette fades in when anomaly type = WINDOW
-        self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
-        self.silhouette_visible = False
-        self.window_opacity = 0.0
-        self.current_anomaly_type = ANOMALY_NONE
-
     # ── Input ─────────────────────────────────────────────────────────────────
     def handle_event(self, event):
         if self.game_over:
@@ -124,10 +112,26 @@ class Level2State(BaseState):
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.is_clicked = True
-            # Switch click — always allowed regardless of window
-            if self.img_rect.collidepoint(event.pos):
+            
+            # Window click - toggle open/closed state
+            if self.window_rect.collidepoint(event.pos):
+                self.window_open = not self.window_open
+                self.window_clicks_this_round += 1
+                # Play appropriate sound
+                if self.window_open:
+                    self.game.audio.play("window_open", channel="window")
+                else:
+                    self.game.audio.play("window_close", channel="window")
+            
+            # Switch click - toggle light
+            elif self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
+                # Play switch sound
+                if self.light_on:
+                    self.game.audio.play("switch_on", channel="switch")
+                else:
+                    self.game.audio.play("switch_off", channel="switch")
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.is_clicked = False
@@ -143,12 +147,6 @@ class Level2State(BaseState):
         if not self.game_over:
             self.instr_alpha = min(1.0, self.instr_alpha + dt * 2.5)
             self.instr_pulse += dt
-
-            # Silhouette fades in/out smoothly
-            if self.silhouette_visible:
-                self.window_opacity = min(1.0, self.window_opacity + dt * 3.0)
-            else:
-                self.window_opacity = max(0.0, self.window_opacity - dt * 3.0)
 
             time_left = max(0.0, self.round_time_limit - self.round_timer)
             if time_left < 3.0:
@@ -220,7 +218,7 @@ class Level2State(BaseState):
 
     # ── Internal helpers ──────────────────────────────────────────────────────
     def _load_next_instruction(self):
-        result = self.instr_sys.next_instruction(self.light_on)
+        result = self.instr_sys.next_instruction(self.light_on, self.window_open)
 
         if result is None:
             # All 8 rounds done successfully → return to menu
@@ -234,36 +232,22 @@ class Level2State(BaseState):
         self.current_is_anomaly = result[1]
         self.current_base_rule = result[2]
 
-        # Pick which form the anomaly takes this round
-        if self.current_is_anomaly:
-            if random.random() < 0.5:
-                self.current_anomaly_type = ANOMALY_TEXT
-                self.silhouette_visible = False  # glitchy text is the signal
-            else:
-                self.current_anomaly_type = ANOMALY_WINDOW
-                self.silhouette_visible = True  # silhouette is the signal instead
-                # Override display text: show the NORMAL (non-glitchy) text
-                # so the silhouette is the only anomaly cue
-                self.current_text = result[2]
-        else:
-            self.current_anomaly_type = ANOMALY_NONE
-            self.silhouette_visible = False
-
         self.round_timer = 0.0
         self.clicks_this_round = 0
+        self.window_clicks_this_round = 0
         self.start_light_state = self.light_on
-        self.window_opacity = 0.0
+        self.start_window_state = self.window_open
         self.instr_alpha = 0.0
         self.instr_pulse = 0.0
 
     def _resolve_round(self):
-        # Both ANOMALY_TEXT and ANOMALY_WINDOW pass is_anomaly=True to evaluate_action.
-        # The silhouette is just a visual replacement for glitchy text — the rule is identical.
         success = self.instr_sys.evaluate_action(
             self.current_base_rule,
             self.current_is_anomaly,
             self.start_light_state,
-            self.clicks_this_round
+            self.clicks_this_round,
+            self.start_window_state,
+            self.window_clicks_this_round
         )
 
         if success:
@@ -292,8 +276,6 @@ class Level2State(BaseState):
         pulse_t = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
         base_col = ANOMALY_COL if self.current_is_anomaly else INSTRUCTION_COL
         pulse_col = lerp_color(base_col, WHITE, pulse_t * 0.15)
-        # Always show the instruction text — for WINDOW anomaly this is the normal
-        # (non-glitchy) text, and the silhouette in the window is the anomaly signal
         draw_text(surface, self.current_text, 20, pulse_col,
                   CX, HUD_H // 2, bold=True, alpha=alpha)
 
@@ -307,36 +289,52 @@ class Level2State(BaseState):
 
     def _draw_window(self, surface):
         """
-        Window frame is always visible to the left of the switch.
-        Silhouette fades in only during ANOMALY_WINDOW rounds —
-        it means the same as glitchy text: this is an anomaly, don't trust the instruction.
+        Draw the window frame and panes based on open/closed state.
+        Window can be clicked to open or close it.
         """
         wr = self.window_rect
 
         # Window frame — always drawn
-        pygame.draw.rect(surface, (45, 45, 55), wr, border_radius=4)
-        pygame.draw.rect(surface, (95, 95, 110), wr, 2, border_radius=4)
-        # Cross dividers
-        mx, my = wr.centerx, wr.centery
-        pygame.draw.line(surface, (95, 95, 110), (mx, wr.top + 4), (mx, wr.bottom - 4), 1)
-        pygame.draw.line(surface, (95, 95, 110), (wr.left + 4, my), (wr.right - 4, my), 1)
+        frame_color = (45, 45, 55)
+        border_color = (95, 95, 110)
+        
+        pygame.draw.rect(surface, frame_color, wr, border_radius=4)
+        pygame.draw.rect(surface, border_color, wr, 2, border_radius=4)
 
-        # Silhouette fades in when it's a window anomaly round
-        if self.window_opacity > 0.01:
-            a = int(self.window_opacity * 230)
-            sil = pygame.Surface((wr.width, wr.height), pygame.SRCALPHA)
-            sw, sh = wr.width, wr.height
-            # Head
-            pygame.draw.ellipse(sil, (10, 10, 10, a), (sw // 2 - 16, 14, 32, 32))
-            # Body
-            pygame.draw.rect(sil, (10, 10, 10, a), (sw // 2 - 12, 46, 24, 38))
-            # Arms
-            pygame.draw.line(sil, (10, 10, 10, a), (sw // 2 - 12, 52), (sw // 2 - 32, 76), 5)
-            pygame.draw.line(sil, (10, 10, 10, a), (sw // 2 + 12, 52), (sw // 2 + 32, 76), 5)
-            # Legs
-            pygame.draw.line(sil, (10, 10, 10, a), (sw // 2 - 7, 84), (sw // 2 - 7, 116), 5)
-            pygame.draw.line(sil, (10, 10, 10, a), (sw // 2 + 7, 84), (sw // 2 + 7, 116), 5)
-            surface.blit(sil, wr.topleft)
+        if self.window_open:
+            # Draw open window - panes pushed to the sides
+            left_pane = pygame.Rect(wr.left + 4, wr.top + 4, wr.width // 2 - 12, wr.height - 8)
+            right_pane = pygame.Rect(wr.centerx + 8, wr.top + 4, wr.width // 2 - 12, wr.height - 8)
+            
+            # Draw panes (slightly darker when open)
+            pane_color = (30, 30, 40)
+            pygame.draw.rect(surface, pane_color, left_pane, border_radius=2)
+            pygame.draw.rect(surface, pane_color, right_pane, border_radius=2)
+            pygame.draw.rect(surface, border_color, left_pane, 1, border_radius=2)
+            pygame.draw.rect(surface, border_color, right_pane, 1, border_radius=2)
+            
+            # Draw opening (the gap in the middle showing "outside")
+            opening = pygame.Rect(wr.left + wr.width // 2 - 8, wr.top + 4, 16, wr.height - 8)
+            night_color = (10, 15, 25)
+            pygame.draw.rect(surface, night_color, opening)
+            
+        else:
+            # Draw closed window - cross dividers in the middle
+            mx, my = wr.centerx, wr.centery
+            
+            # Draw glass panes (semi-transparent blue-ish tint)
+            glass_color = (40, 50, 70)
+            pane_tl = pygame.Rect(wr.left + 4, wr.top + 4, wr.width // 2 - 6, wr.height // 2 - 6)
+            pane_tr = pygame.Rect(mx + 2, wr.top + 4, wr.width // 2 - 6, wr.height // 2 - 6)
+            pane_bl = pygame.Rect(wr.left + 4, my + 2, wr.width // 2 - 6, wr.height // 2 - 6)
+            pane_br = pygame.Rect(mx + 2, my + 2, wr.width // 2 - 6, wr.height // 2 - 6)
+            
+            for pane in [pane_tl, pane_tr, pane_bl, pane_br]:
+                pygame.draw.rect(surface, glass_color, pane)
+            
+            # Cross dividers
+            pygame.draw.line(surface, border_color, (mx, wr.top + 4), (mx, wr.bottom - 4), 2)
+            pygame.draw.line(surface, border_color, (wr.left + 4, my), (wr.right - 4, my), 2)
 
     def _draw_flashlight(self, surface):
         mx, my = pygame.mouse.get_pos()
