@@ -3,6 +3,8 @@ import math
 import pygame
 import random
 from states.base import BaseState
+from states.audio_manager import AudioManager
+audio = AudioManager()
 from system.instruction_system import InstructionSystem
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
@@ -48,6 +50,7 @@ class GameState(BaseState):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
+        audio.play_music("ambience", loop=True)
         # --- images ---
         self.img_on  = pygame.transform.scale(
             pygame.image.load(os.path.join("assets", "light-on.png")).convert_alpha(),
@@ -126,8 +129,10 @@ class GameState(BaseState):
         if self.game_over:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
+                    audio.stop_music()
                     self.on_enter()
                 elif event.key == pygame.K_ESCAPE:
+                    audio.stop_music()
                     pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
             return
@@ -137,6 +142,10 @@ class GameState(BaseState):
             if self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
+                if self.light_on:
+                    audio.play("switch_on", channel="switch")
+                else:
+                    audio.play("switch_off", channel="switch")
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.is_clicked = False
