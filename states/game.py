@@ -300,10 +300,10 @@ class GameState(BaseState):
             if self.cobweb_visible:
                 self._draw_cobweb(surface)
 
-            self._draw_hud(surface)
+
             if not self.light_on:
                 self._draw_flashlight(surface)
-
+            self._draw_hud(surface)
             if not self.game_over:
                 self._apply_distress_effects(surface)
                 self._draw_cursor(surface)
@@ -330,7 +330,7 @@ class GameState(BaseState):
         surface.blit(bg, (0, 0))
         img = self.img_on if self.light_on else self.img_off
         surface.blit(img, self.img_rect)
-        self._draw_hud(surface)
+        """self._draw_hud(surface)"""
         if not self.light_on:
             self._draw_flashlight(surface)
         if self.trans_phase in (TRANS_HAND_RISE, TRANS_HAND_CLICK, TRANS_HAND_EXIT):
@@ -392,25 +392,40 @@ class GameState(BaseState):
             pygame.mouse.set_visible(False)
 
     def _draw_hud(self, surface):
-        pygame.draw.rect(surface, HUD_BG, (0, 0, SCREEN_W, HUD_H))
-        if self.game_over:
-            draw_text(surface, "ROUND COMPLETE", 18, AMBER, CX, HUD_H // 2, bold=True)
-            return
-        if self.trans_phase != TRANS_IDLE:
-            draw_text(surface, "LEVEL 1 COMPLETE", 16, AMBER, CX, HUD_H // 2, bold=True)
-            return
+
         alpha = int(self.instr_alpha * 255)
-        badge_col = AMBER if self.light_on else (50, 90, 170)
-        badge_lbl = "LIGHT: ON" if self.light_on else "LIGHT: OFF"
-        draw_text(surface, badge_lbl, 12, badge_col, 68, HUD_H // 2)
-        pulse_t = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
-        base_col = ANOMALY_COL if self.current_anomaly else INSTRUCTION_COL
-        pulse_col = lerp_color(base_col, WHITE, pulse_t * 0.15)
-        draw_text(surface, self.current_text, 20, pulse_col, CX, HUD_H // 2, bold=True, alpha=alpha)
-        time_left = max(0.0, self.round_time_limit - self.round_timer)
-        time_col = AMBER if time_left > 1.5 else BLOOD_RED
-        draw_text(surface, f"TIME: {time_left:.1f}s", 14, time_col, SCREEN_W - 80, HUD_H // 2 - 10)
-        draw_text(surface, f"SCORE: {self.game.score}", 11, MID_GRAY, SCREEN_W - 80, HUD_H // 2 + 10)
+        # ── TEXTBOX SETTINGS ─────────────────────────
+        box_width = 700  # 🔥 reduce width here
+        box_height = 50
+        box_x = CX - box_width // 2
+        box_y = HUD_H + 40  # 🔥 move downward here
+
+        # ── COLOR CHANGE BASED ON LIGHT ──────────────
+        if self.light_on:
+            box_color = (30, 30, 30)  # dark box
+            text_color = WHITE
+        else:
+            box_color = BLOOD_RED  # 🔥 red box when light OFF
+            text_color = BLACK  # 🔥 black text
+
+        # ── DRAW BOX ────────────────────────────────
+        pygame.draw.rect(surface, box_color, (box_x, box_y, box_width, box_height), border_radius=8)
+
+        # Optional border
+        pygame.draw.rect(surface, WHITE, (box_x, box_y, box_width, box_height), 2, border_radius=8)
+
+        # ── TEXT INSIDE BOX ─────────────────────────
+        draw_text(
+            surface,
+            self.current_text,
+            18,
+            text_color,
+            CX,
+            box_y + box_height // 2,
+            bold=True,
+            alpha=alpha
+        )
+
 
     def _draw_cobweb(self, surface):
         cx, cy = self.cobweb_rect.center
