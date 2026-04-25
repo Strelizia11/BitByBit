@@ -1,5 +1,7 @@
 import pygame
 import math
+import os
+from PIL import Image, ImageSequence
 from states.base import BaseState
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
@@ -25,6 +27,41 @@ class MenuState(BaseState):
             pygame.Rect(CX - bw // 2, start_y + i * 64, bw, bh)
             for i in range(len(self.BUTTONS))
         ]
+        
+        # Load animated GIF frames
+        self.gif_frames = []
+        self.frame_durations = []
+        self.current_frame = 0
+        self.frame_timer = 0.0
+        
+        try:
+            gif_path = os.path.join("assets", "GameMenu.gif")
+            gif = Image.open(gif_path)
+            
+            for frame in ImageSequence.Iterator(gif):
+                # Convert PIL image to pygame surface
+                frame_surface = pygame.image.fromstring(
+                    frame.tobytes(), frame.size, frame.mode
+                )
+                # Scale to screen size
+                frame_surface = pygame.transform.scale(frame_surface, (1920, 1080))
+                self.gif_frames.append(frame_surface)
+                
+                # Get frame duration (in seconds)
+                duration = frame.info.get('duration', 100) / 1000.0  # Convert ms to seconds
+                self.frame_durations.append(duration)
+                
+        except Exception as e:
+            print(f"Error loading GIF: {e}")
+            # Fallback to static image if GIF loading fails
+            try:
+                self.bg_image = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
+                self.bg_image = pygame.transform.scale(self.bg_image, (1920, 1080))
+                self.gif_frames = [self.bg_image]  # Single frame
+                self.frame_durations = [1.0]  # 1 second duration
+            except:
+                # Ultimate fallback - solid color
+                self.gif_frames = None
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -48,9 +85,28 @@ class MenuState(BaseState):
     def update(self, dt):
         self.time    += dt
         self.fade_in  = min(1.0, self.fade_in + dt * 1.4)
+        
+        # Update GIF animation
+        if self.gif_frames and len(self.gif_frames) > 1:
+            self.frame_timer += dt
+            if self.frame_timer >= self.frame_durations[self.current_frame]:
+                self.frame_timer = 0.0
+                self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
 
     def draw(self, surface):
-        surface.fill(NEAR_BLACK)
+        # Draw current GIF frame or fallback
+        if self.gif_frames:
+            current_frame = self.gif_frames[self.current_frame]
+            surface.blit(current_frame, (0, 0))
+        else:
+            # Fallback to solid color if no image loaded
+            surface.fill(NEAR_BLACK)
+        
+        # Add dark overlay for better text readability
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))  # Semi-transparent black overlay
+        surface.blit(overlay, (0, 0))
+        
         self._draw_scanlines(surface)
         alpha = int(self.fade_in * 255)
 
