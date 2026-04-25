@@ -43,13 +43,26 @@ class InstructionSystem:
         """Evaluates if the player survived based on clicks, light state, and anomalies."""
 
         # CORE LOGIC: Should the player Follow or Invert the instruction?
-        # Light ON + Normal -> Follow
-        # Light OFF + Normal -> Invert
-        # Light ON + Anomaly -> Invert
-        # Light OFF + Anomaly -> Follow
         should_follow = (light_was_on_at_start and not is_anomaly) or (not light_was_on_at_start and is_anomaly)
 
-        if base_rule == "CLICK THE SWITCH":
+        # ── SPECIAL EXCEPTION: The "WITCH" Wordplay ──
+        if base_rule == "DO NOT CLICK THE SWITCH":
+            if not is_anomaly:
+                # Normal: "DO NOT CLICK THE SWITCH"
+                if light_was_on_at_start:
+                    return total_clicks == 0  # Light ON: Follow it (don't click)
+                else:
+                    return total_clicks > 0  # Light OFF: Opposite (click)
+            else:
+                # Anomaly: "DONT CLICK THE WITCH"
+                # Because there is no witch, the player clicks the switch in both light states!
+                if light_was_on_at_start:
+                    return total_clicks > 0
+                else:
+                    return total_clicks == 0
+
+                    # ── STANDARD RULES ──
+        elif base_rule == "CLICK THE SWITCH":
             if should_follow:
                 return total_clicks > 0  # Follow: click at least once
             else:
@@ -72,11 +85,5 @@ class InstructionSystem:
                 return total_clicks == 5
             else:
                 return total_clicks != 5
-
-        elif base_rule == "DO NOT CLICK THE SWITCH":
-            if should_follow:
-                return total_clicks == 0
-            else:
-                return total_clicks > 0
 
         return False
