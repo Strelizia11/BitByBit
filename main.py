@@ -1,42 +1,55 @@
 import pygame
+import sys
+from states.menu import MenuState
+from states.disclaimer import DisclaimerState
+from states.mechanics import MechanicsState
+from states.game import GameState
 
-# pygame setup
-pygame.init()
-screen = pygame.display.set_mode((1280, 720))
-clock = pygame.time.Clock()
-running = True
-dt = 0
 
-player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+SCREEN_W, SCREEN_H = 800, 600
+FPS = 60
+TITLE = "Patrick Says HAHAHAHA"
 
-while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+class Game:
+    def __init__(self):
+        pygame.init()
+        pygame.mixer.init()
+        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
+        pygame.display.set_caption(TITLE)
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.score = 0
+        self.states = {}
+        self.current_state = None
+        self._init_states()
+        self.switch_state("menu")
 
-    # fill the screen with a color to wipe away anything from last frame
-    screen.fill("purple")
+    def _init_states(self):
+        self.states = {
+            "menu":       MenuState(self),
+            "disclaimer": DisclaimerState(self),
+            "mechanics":  MechanicsState(self),
+            "game":       GameState(self)
+        }
 
-    pygame.draw.circle(screen, "red", player_pos, 40)
+    def switch_state(self, name, **kwargs):
+        self.current_state = self.states[name]
+        self.current_state.on_enter(**kwargs)
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w]:
-        player_pos.y -= 300 * dt
-    if keys[pygame.K_s]:
-        player_pos.y += 300 * dt
-    if keys[pygame.K_a]:
-        player_pos.x -= 300 * dt
-    if keys[pygame.K_d]:
-        player_pos.x += 300 * dt
+    def run(self):
+        while self.running:
+            dt = self.clock.tick(FPS) / 1000.0
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.running = False
+                self.current_state.handle_event(event)
+            self.current_state.update(dt)
+            self.current_state.draw(self.screen)
+            pygame.display.flip()
+        pygame.quit()
+        sys.exit()
 
-    # flip() the display to put your work on screen
-    pygame.display.flip()
 
-    # limits FPS to 60
-    # dt is delta time in seconds since last frame, used for framerate-
-    # independent physics.
-    dt = clock.tick(60) / 1000
-
-pygame.quit()
+if __name__ == "__main__":
+    Game().run()
