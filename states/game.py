@@ -74,7 +74,7 @@ class GameState(BaseState):
         self.light_on   = True
         self.is_clicked = False
 
-        self.instr_sys = InstructionSystem(total_rounds=8)
+        self.instr_sys = InstructionSystem(total_rounds=16)
         self.instr_sys.reset()
 
         # --- timer & tracking ---
@@ -100,6 +100,9 @@ class GameState(BaseState):
 
         self.death_img = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
         self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
+
+        self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
+        self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
 
         # --- cobweb obstacle (modified) ---
         self.cobweb_visible     = True
@@ -291,7 +294,8 @@ class GameState(BaseState):
         else:
             surface.fill((0, 0, 0))
             if self.death_phase == 666:
-                surface.blit(self.death_img, (0, 0))
+                surface.blit(self.jumpscare, (0, 0))
+                audio.play("switch_on", channel="switch")
             elif self.death_phase == 2:
                 alpha = min(255, int((self.death_timer / 2.0) * 255))
                 temp_img = self.death_img.copy()
