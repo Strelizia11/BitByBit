@@ -1,5 +1,6 @@
 import pygame
 import math
+from PIL import Image
 from states.base import BaseState
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
@@ -26,6 +27,29 @@ class MenuState(BaseState):
             for i in range(len(self.BUTTONS))
         ]
 
+        # Load GIF background
+        self.gif_frames = []
+        self.current_frame = 0
+        self.frame_timer = 0.0
+        self.frame_duration = 0.1  # Default frame duration
+        try:
+            gif_path = "assets/GameMenu.gif"
+            with Image.open(gif_path) as gif:
+                for frame in range(gif.n_frames):
+                    gif.seek(frame)
+                    frame_surface = pygame.image.fromstring(
+                        gif.tobytes(), gif.size, gif.mode
+                    ).convert()
+                    # Scale to fit screen while maintaining aspect ratio
+                    frame_surface = pygame.transform.scale(frame_surface, (SCREEN_W, SCREEN_H))
+                    self.gif_frames.append(frame_surface)
+                # Get frame duration if available
+                if hasattr(gif, 'info') and 'duration' in gif.info:
+                    self.frame_duration = gif.info['duration'] / 1000.0  # Convert to seconds
+        except Exception as e:
+            print(f"Failed to load GIF: {e}")
+            self.gif_frames = []
+
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             mx, my = event.pos
@@ -49,8 +73,20 @@ class MenuState(BaseState):
         self.time    += dt
         self.fade_in  = min(1.0, self.fade_in + dt * 1.4)
 
+        # Update GIF animation
+        if self.gif_frames:
+            self.frame_timer += dt
+            if self.frame_timer >= self.frame_duration:
+                self.frame_timer = 0.0
+                self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
+
     def draw(self, surface):
-        surface.fill(NEAR_BLACK)
+        # Draw GIF background
+        if self.gif_frames:
+            surface.blit(self.gif_frames[self.current_frame], (0, 0))
+        else:
+            surface.fill(NEAR_BLACK)
+
         self._draw_scanlines(surface)
         alpha = int(self.fade_in * 255)
 

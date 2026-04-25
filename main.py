@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 from states.menu import MenuState
 from states.disclaimer import DisclaimerState
 from states.mechanics import MechanicsState
@@ -17,7 +18,8 @@ class Game:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
+        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN | pygame.SCALED)
+        os.environ["SDL_RENDER_SCALE_QUALITY"]="1"
         pygame.display.set_caption(TITLE)
         self.clock   = pygame.time.Clock()
         self.running = True

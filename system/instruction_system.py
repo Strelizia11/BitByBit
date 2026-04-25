@@ -7,7 +7,7 @@ class InstructionSystem:
         self.current_round = 7
 
     def reset(self):
-        self.current_round = 0
+        self.current_round = 7
 
     def next_instruction(self, is_light_on: bool):
         """Returns (display_text, is_anomaly, base_rule)"""
