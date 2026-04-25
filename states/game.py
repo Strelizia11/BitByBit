@@ -17,7 +17,7 @@ from utils import (
 
 # ── Layout constants ───────────────────────────────────────────────────────────
 HUD_H = 52
-BULB_SIZE = (80, 120)
+BULB_SIZE = (200, 280 )
 BULB_CENTER = (CX, CY + 30)
 
 # ── HUD colours ───────────────────────────────────────────────────────────────
@@ -47,14 +47,24 @@ class GameState(BaseState):
         audio.play_music("ambience", loop=True)
         # --- images ---
         self.img_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-on.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-off.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "light-off1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)
+
+        # --- background images ---
+        self.bg_light_on = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "plain_red.png")).convert(),
+            (SCREEN_W, SCREEN_H)
+        )
+        self.bg_light_off = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "blood_red.png")).convert(),
+            (SCREEN_W, SCREEN_H)
+        )
 
         # --- cursor images ---
         self.cur_normal = pygame.transform.scale(
@@ -282,7 +292,8 @@ class GameState(BaseState):
             return
 
         if not self.game_over:
-            surface.fill((255, 255, 255))
+            bg = self.bg_light_on if self.light_on else self.bg_light_off
+            surface.blit(bg, (0, 0))
             img = self.img_on if self.light_on else self.img_off
             surface.blit(img, self.img_rect)
 
@@ -315,14 +326,17 @@ class GameState(BaseState):
                 surface.blit(temp_img, (0, 0))
 
     def _draw_transition(self, surface):
-        surface.fill((255, 255, 255))
+        bg = self.bg_light_on if self.light_on else self.bg_light_off
+        surface.blit(bg, (0, 0))
         img = self.img_on if self.light_on else self.img_off
         surface.blit(img, self.img_rect)
         self._draw_hud(surface)
-
+        if not self.light_on:
+            self._draw_flashlight(surface)
         if self.trans_phase in (TRANS_HAND_RISE, TRANS_HAND_CLICK, TRANS_HAND_EXIT):
             hx = CX - self.simon_hand_img.get_width() // 2
             hy = int(self.hand_y)
+
             surface.blit(self.simon_hand_img, (hx, hy))
 
         if self.trans_phase in (TRANS_BLACKOUT, TRANS_TYPING, TRANS_TO_LVL2):

@@ -51,11 +51,11 @@ class Level2State(BaseState):
     def on_enter(self, **kwargs):
         # --- images ---
         self.img_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-on.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-off.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "light-off1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)

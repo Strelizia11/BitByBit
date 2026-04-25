@@ -12,7 +12,7 @@ class SplashState(BaseState):
         # self.image = pygame.image.load("assets/logo.png").convert_alpha()
         
         # Option B: Placeholder (A simple white box for now so you can test)
-        original_image = pygame.image.load("./assets/light-on.png").convert_alpha()
+        original_image = pygame.image.load("./assets/light-on1.png").convert_alpha()
     
     # 2. Define your custom size (Width, Height)
         custom_size = (400, 400) 
