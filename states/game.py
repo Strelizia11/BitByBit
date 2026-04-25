@@ -5,6 +5,7 @@ import random
 
 from states.base import BaseState
 from states.audio_manager import AudioManager
+
 audio = AudioManager()
 from system.instruction_system import InstructionSystem
 from utils import (
@@ -15,28 +16,28 @@ from utils import (
 )
 
 # ── Layout constants ───────────────────────────────────────────────────────────
-HUD_H        = 52
-BULB_SIZE    = (80, 120)
-BULB_CENTER  = (CX, CY + 30)
+HUD_H = 52
+BULB_SIZE = (80, 120)
+BULB_CENTER = (CX, CY + 30)
 
 # ── HUD colours ───────────────────────────────────────────────────────────────
-HUD_BG          = (15, 15, 15)
+HUD_BG = (15, 15, 15)
 INSTRUCTION_COL = (220, 220, 220)
-ANOMALY_COL     = (220, 220, 220)
-FOLLOW_COL      = GREEN_BRIGHT
-IGNORE_COL      = BLOOD_RED
+ANOMALY_COL = (220, 220, 220)
+FOLLOW_COL = GREEN_BRIGHT
+IGNORE_COL = BLOOD_RED
 
 # ── Transition phases ─────────────────────────────────────────────────────────
-TRANS_IDLE       = 0
-TRANS_HAND_RISE  = 1
+TRANS_IDLE = 0
+TRANS_HAND_RISE = 1
 TRANS_HAND_CLICK = 2
-TRANS_HAND_EXIT  = 3
-TRANS_BLACKOUT   = 4
-TRANS_TYPING     = 5
-TRANS_TO_LVL2    = 6
+TRANS_HAND_EXIT = 3
+TRANS_BLACKOUT = 4
+TRANS_TYPING = 5
+TRANS_TO_LVL2 = 6
 
 CUTSCENE_MSG = "Simon turns the lights off for you"
-TYPING_SPEED = 18   # characters per second
+TYPING_SPEED = 18  # characters per second
 
 
 class GameState(BaseState):
@@ -45,7 +46,7 @@ class GameState(BaseState):
     def on_enter(self, **kwargs):
         audio.play_music("ambience", loop=True)
         # --- images ---
-        self.img_on  = pygame.transform.scale(
+        self.img_on = pygame.transform.scale(
             pygame.image.load(os.path.join("assets", "light-on.png")).convert_alpha(),
             BULB_SIZE
         )
@@ -56,7 +57,7 @@ class GameState(BaseState):
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)
 
         # --- cursor images ---
-        self.cur_normal  = pygame.transform.scale(
+        self.cur_normal = pygame.transform.scale(
             pygame.image.load(os.path.join("assets", "hand.png")).convert_alpha(),
             (32, 32)
         )
@@ -72,28 +73,28 @@ class GameState(BaseState):
         self.simon_hand_img = pygame.transform.scale(raw_hand, (120, 160))
 
         # --- light state ---
-        self.light_on   = True
+        self.light_on = True
         self.is_clicked = False
 
         self.instr_sys = InstructionSystem(total_rounds=8)
         self.instr_sys.reset()
 
         # --- timer & tracking ---
-        self.round_time_limit  = 6.0
-        self.round_timer       = 0.0
+        self.round_time_limit = 6.0
+        self.round_timer = 0.0
         self.clicks_this_round = 0
         self.start_light_state = self.light_on
 
-        self.current_text    = ""
+        self.current_text = ""
         self.current_anomaly = False
-        self.game_over       = False
+        self.game_over = False
 
         self._load_next_instruction()
 
-        self.instr_alpha       = 0.0
-        self.instr_pulse       = 0.0
+        self.instr_alpha = 0.0
+        self.instr_pulse = 0.0
         self.distress_intensity = 0.0
-        self.game_over         = False
+        self.game_over = False
 
         # --- death sequence ---
         self.death_timer = 0.0
@@ -106,16 +107,16 @@ class GameState(BaseState):
         self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
 
         # --- cobweb obstacle (modified) ---
-        self.cobweb_visible     = True
-        self.cobweb_timer       = 0.0
-        self.cobweb_respawn_at  = random.uniform(5.0, 6.0)
-        self.cobweb_clicks      = 0 # New tracking for 3-click health[cite: 1]
-        self._randomize_cobweb_pos() # Initialize random start position[cite: 1]
+        self.cobweb_visible = True
+        self.cobweb_timer = 0.0
+        self.cobweb_respawn_at = random.uniform(5.0, 6.0)
+        self.cobweb_clicks = 0  # New tracking for 3-click health[cite: 1]
+        self._randomize_cobweb_pos()  # Initialize random start position[cite: 1]
 
         # --- level transition cutscene ---
-        self.trans_phase  = TRANS_IDLE
-        self.trans_timer  = 0.0
-        self.typed_chars  = 0.0
+        self.trans_phase = TRANS_IDLE
+        self.trans_timer = 0.0
+        self.typed_chars = 0.0
         self.blackout_alpha = 0
         self.hand_y_offscreen = SCREEN_H + 20
         self.hand_y = float(self.hand_y_offscreen)
@@ -123,10 +124,10 @@ class GameState(BaseState):
 
     def _randomize_cobweb_pos(self):
         """Generates a new position for the cobweb within a radius of the switch[cite: 1]"""
-        offset_x = random.randint(-60, 60) # Random horizontal offset[cite: 1]
-        offset_y = random.randint(-40, 40) # Random vertical offset[cite: 1]
+        offset_x = random.randint(-60, 60)  # Random horizontal offset[cite: 1]
+        offset_y = random.randint(-40, 40)  # Random vertical offset[cite: 1]
         self.cobweb_rect = pygame.Rect(
-            BULB_CENTER[0] - 45 + offset_x, 
+            BULB_CENTER[0] - 45 + offset_x,
             BULB_CENTER[1] - 35 + offset_y,
             90, 90
         )
@@ -142,28 +143,28 @@ class GameState(BaseState):
                     audio.stop_music()
                     self.on_enter()
                 elif event.key == pygame.K_ESCAPE:
-                    audio.stop_music()                   
+                    audio.stop_music()
                     pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
             return
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.is_clicked = True
-            
+
             # Modified: Check if cobweb is clicked and handle 3-click logic[cite: 1]
             if self.cobweb_visible and self.cobweb_rect.collidepoint(event.pos):
                 self.cobweb_clicks += 1
-                if self.cobweb_clicks >= 3: # Requires 3 clicks to disappear[cite: 1]
-                    self.cobweb_visible    = False
-                    self.cobweb_timer      = 0.0
+                if self.cobweb_clicks >= 3:  # Requires 3 clicks to disappear[cite: 1]
+                    self.cobweb_visible = False
+                    self.cobweb_timer = 0.0
                     self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-                    self.cobweb_clicks     = 0 # Reset health for next respawn[cite: 1]
-            
+                    self.cobweb_clicks = 0  # Reset health for next respawn[cite: 1]
+
             # Only allow switch click if cobweb is removed[cite: 1]
             elif not self.cobweb_visible and self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
-                
+
                 if self.light_on:
                     audio.play("switch_on", channel="switch")
                 else:
@@ -192,10 +193,10 @@ class GameState(BaseState):
             if not self.cobweb_visible:
                 self.cobweb_timer += dt
                 if self.cobweb_timer >= self.cobweb_respawn_at:
-                    self.cobweb_visible    = True
-                    self.cobweb_timer      = 0.0
+                    self.cobweb_visible = True
+                    self.cobweb_timer = 0.0
                     self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-                    self._randomize_cobweb_pos() #
+                    self._randomize_cobweb_pos()  #
 
             time_left = max(0.0, self.round_time_limit - self.round_timer)
             if time_left < 3.0:
@@ -227,8 +228,6 @@ class GameState(BaseState):
                 self.game.switch_state("menu")
 
     def _update_transition(self, dt):
-        audio.stop_music()
-        audio.play("whisper3", channel="whisper", duration=6.5, fadeout=0.5)
         audio.play("switch_off", channel="switch")
         self.trans_timer += dt
         if self.trans_phase == TRANS_HAND_RISE:
@@ -270,6 +269,7 @@ class GameState(BaseState):
                     self.trans_timer = 0.0
         elif self.trans_phase == TRANS_TO_LVL2:
             if self.trans_timer >= 1.0:
+                audio.channels["whisper"].stop()
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("level2")
 
@@ -338,21 +338,23 @@ class GameState(BaseState):
         if result is None:
             self._start_transition()
             return
-        self.current_text        = result[0]
-        self.current_anomaly     = result[1]
-        self.current_base_rule   = result[2]
-        self.round_timer          = 0.0
-        self.clicks_this_round    = 0
-        self.start_light_state    = self.light_on
+        self.current_text = result[0]
+        self.current_anomaly = result[1]
+        self.current_base_rule = result[2]
+        self.round_timer = 0.0
+        self.clicks_this_round = 0
+        self.start_light_state = self.light_on
         self.instr_alpha = 0.0
         self.instr_pulse = 0.0
 
     def _start_transition(self):
         self.trans_phase = TRANS_HAND_RISE
         self.trans_timer = 0.0
-        self.hand_y      = float(self.hand_y_offscreen)
+        self.hand_y = float(self.hand_y_offscreen)
         self.blackout_alpha = 0
         self.typed_chars = 0.0
+        audio.stop_music()
+        audio.play("whisper3", channel="whisper", duration=6.5, fadeout=0.5)
 
     def _resolve_round(self):
         success = self.instr_sys.evaluate_action(
@@ -365,7 +367,7 @@ class GameState(BaseState):
             self.game.score += 1
             self._load_next_instruction()
         else:
-            self.game_over   = True
+            self.game_over = True
             self.death_timer = 0.0
             if random.random() < 0.2:
                 self.death_phase = 4
@@ -385,12 +387,12 @@ class GameState(BaseState):
         badge_col = AMBER if self.light_on else (50, 90, 170)
         badge_lbl = "LIGHT: ON" if self.light_on else "LIGHT: OFF"
         draw_text(surface, badge_lbl, 12, badge_col, 68, HUD_H // 2)
-        pulse_t   = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
-        base_col  = ANOMALY_COL if self.current_anomaly else INSTRUCTION_COL
+        pulse_t = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
+        base_col = ANOMALY_COL if self.current_anomaly else INSTRUCTION_COL
         pulse_col = lerp_color(base_col, WHITE, pulse_t * 0.15)
         draw_text(surface, self.current_text, 20, pulse_col, CX, HUD_H // 2, bold=True, alpha=alpha)
         time_left = max(0.0, self.round_time_limit - self.round_timer)
-        time_col  = AMBER if time_left > 1.5 else BLOOD_RED
+        time_col = AMBER if time_left > 1.5 else BLOOD_RED
         draw_text(surface, f"TIME: {time_left:.1f}s", 14, time_col, SCREEN_W - 80, HUD_H // 2 - 10)
         draw_text(surface, f"SCORE: {self.game.score}", 11, MID_GRAY, SCREEN_W - 80, HUD_H // 2 + 10)
 
@@ -409,9 +411,9 @@ class GameState(BaseState):
         pygame.draw.circle(surface, (60, 60, 60), (cx, cy), 6)
 
     def _draw_flashlight(self, surface):
-        mx, my        = pygame.mouse.get_pos()
-        radius        = 120
-        inner_alpha   = 80
+        mx, my = pygame.mouse.get_pos()
+        radius = 120
+        inner_alpha = 80
         ambient_alpha = 255
         dark = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
         dark.fill((0, 0, 0, ambient_alpha))
@@ -441,8 +443,8 @@ class GameState(BaseState):
         blur_factor = 1.0 - (self.distress_intensity * 0.2)
         temp_w = max(1, int(SCREEN_W * blur_factor))
         temp_h = max(1, int(SCREEN_H * blur_factor))
-        frame        = surface.copy()
-        small_frame  = pygame.transform.smoothscale(frame, (temp_w, temp_h))
+        frame = surface.copy()
+        small_frame = pygame.transform.smoothscale(frame, (temp_w, temp_h))
         blurred_frame = pygame.transform.scale(small_frame, (SCREEN_W, SCREEN_H))
         surface.blit(blurred_frame, (0, 0))
         fade_overlay = pygame.Surface((SCREEN_W, SCREEN_H))
