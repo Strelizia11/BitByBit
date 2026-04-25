@@ -141,6 +141,7 @@ class GameState(BaseState):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     audio.stop_music()
+                    self.game.score = 0
                     self.on_enter()
                 elif event.key == pygame.K_ESCAPE:
                     audio.stop_music()
@@ -271,6 +272,7 @@ class GameState(BaseState):
             if self.trans_timer >= 1.0:
                 audio.channels["whisper"].stop()
                 pygame.mouse.set_visible(True)
+                self.game.score = 0
                 self.game.switch_state("level2")
 
     # ── Draw ──────────────────────────────────────────────────────────────────
