@@ -4,6 +4,7 @@ from states.menu import MenuState
 from states.disclaimer import DisclaimerState
 from states.mechanics import MechanicsState
 from states.game import GameState
+from states.splash import SplashState
 
 
 SCREEN_W, SCREEN_H = 800, 600
@@ -22,10 +23,11 @@ class Game:
         self.states = {}
         self.current_state = None
         self._init_states()
-        self.switch_state("menu")
+        self.switch_state("splash")
 
     def _init_states(self):
         self.states = {
+            "splash":     SplashState(self),
             "menu":       MenuState(self),
             "disclaimer": DisclaimerState(self),
             "mechanics":  MechanicsState(self),
