@@ -1,4 +1,5 @@
 import pygame
+import os
 
 # ── Palette ──────────────────────────────────────────────────────────────────
 BLACK       = (0,   0,   0)
@@ -23,12 +24,31 @@ CX, CY = SCREEN_W // 2, SCREEN_H // 2
 
 # ── Font loader ───────────────────────────────────────────────────────────────
 _font_cache: dict = {}
+_font_cache_secondary: dict = {}
 
 def get_font(size: int, bold: bool = False) -> pygame.font.Font:
+    """Primary font for menu and UI elements"""
     key = (size, bold)
     if key not in _font_cache:
-        _font_cache[key] = pygame.font.SysFont("courier", size, bold=bold)
+        font_path = "assets/fonts/arial.ttf"  # Path to your font file
+        if os.path.exists(font_path):
+            _font_cache[key] = pygame.font.Font(font_path, size)
+        else:
+            # Fallback to system font if custom font not found
+            _font_cache[key] = pygame.font.SysFont("arial", size, bold=bold)
     return _font_cache[key]
+
+def get_font_secondary(size: int, bold: bool = False) -> pygame.font.Font:
+    """Secondary font for body text and alternative UI"""
+    key = (size, bold)
+    if key not in _font_cache_secondary:
+        font_path = "assets/fonts/horroroid.ttf"  # Change to a different font if desired
+        if os.path.exists(font_path):
+            _font_cache_secondary[key] = pygame.font.Font(font_path, size)
+        else:
+            # Fallback to system font if custom font not found
+            _font_cache_secondary[key] = pygame.font.SysFont("courier", size, bold=bold)
+    return _font_cache_secondary[key]
 
 # ── Drawing helpers ───────────────────────────────────────────────────────────
 def draw_text(surface, text, size, color, cx, cy, bold=False, alpha=255):
