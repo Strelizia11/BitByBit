@@ -1,6 +1,7 @@
 import os
 import math
 import pygame
+import random
 from states.base import BaseState
 from system.instruction_system import InstructionSystem
 from utils import (
@@ -57,7 +58,7 @@ class GameState(BaseState):
         self.instr_sys.reset()
 
         # --- New Timer & Tracking Variables ---
-        self.round_time_limit = 4.0  # Player has 4 seconds to complete the action
+        self.round_time_limit = 6.0  # Player has 6 seconds to complete the action
         self.round_timer = 0.0
         self.clicks_this_round = 0
         self.start_light_state = self.light_on
@@ -70,6 +71,18 @@ class GameState(BaseState):
 
         self.instr_alpha = 0.0
         self.instr_pulse = 0.0
+
+        self.distress_intensity = 0.0
+
+        self.game_over = False
+    
+        # New sequence variables
+        self.death_timer = 0.0
+        self.death_phase = 0  # 0: Playing, 1: Pitch Black, 2: Image Fade In, 3: Final Fade Out
+        
+        # Load your "scare" or "fail" image
+        self.death_img = pygame.image.load("./assets/girl.jpg").convert()
+        self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
 
     # ── Input ─────────────────────────────────────────────────────────────────
     def handle_event(self, event):
@@ -98,33 +111,96 @@ class GameState(BaseState):
 
     # ── Update ────────────────────────────────────────────────────────────────
     def update(self, dt):
-        if self.game_over:
-            return
+        if not self.game_over:
+            self.instr_alpha = min(1.0, self.instr_alpha + dt * 2.5)
+            self.instr_pulse += dt
 
-        self.instr_alpha = min(1.0, self.instr_alpha + dt * 2.5)
-        self.instr_pulse += dt
+            # --- Intensity Logic ---
+            time_left = max(0.0, self.round_time_limit - self.round_timer)
+            
+            if time_left < 3.0:
+                # Ramps from 0.0 at 3s to 1.0 at 0s
+                self.distress_intensity = 1.0 - (time_left / 3.0)
+            else:
+                self.distress_intensity = 0.0
 
-        # Run the timer
-        self.round_timer += dt
-        if self.round_timer >= self.round_time_limit:
-            self._resolve_round()
+            # Run the timer
+            self.round_timer += dt
+            if self.round_timer >= self.round_time_limit:
+                self._resolve_round()
+        else:
+            self.death_timer += dt
+
+            # --- Jumpscare Sequence Logic ---
+            # Phase 4: The 2-second silence before the scare
+            if self.death_phase == 4:
+                if self.death_timer > 2.0:
+                    self.death_phase = 666
+                    self.death_timer = 0.0 # Reset for the 4-second scare
+            
+            # Phase 666: The actual Jumpscare
+            elif self.death_phase == 666:
+                if self.death_timer > 4.0: # Lasts 4 seconds
+                    pygame.mouse.set_visible(True)
+                    self.game.switch_state("menu")
+
+            # --- Normal Sequence Logic (Phases 1, 2, 3) ---
+            elif self.death_phase == 1 and self.death_timer > 3.0:
+                self.death_phase = 2
+                self.death_timer = 0.0
+            elif self.death_phase == 2 and self.death_timer > 3.0:
+                self.death_phase = 3
+                self.death_timer = 0.0
+            elif self.death_phase == 3 and self.death_timer > 2.0:
+                pygame.mouse.set_visible(True)
+                self.game.switch_state("menu")
 
     # ── Draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface):
-        surface.fill((255, 255, 255))
-
-        img = self.img_on if self.light_on else self.img_off
-        surface.blit(img, self.img_rect)
-
-        if not self.light_on:
-            self._draw_flashlight(surface)
-
-        self._draw_hud(surface)
-
         if not self.game_over:
-            self._draw_cursor(surface)
+            # 1. Clear background
+            surface.fill((255, 255, 255))
+
+            # 2. Draw the Lightbulb
+            img = self.img_on if self.light_on else self.img_off
+            surface.blit(img, self.img_rect)
+
+            # 3. Draw the HUD (The task instructions)
+            # Drawing it now means it will be affected by the flashlight layer
+            self._draw_hud(surface)
+
+            # 4. Draw the Flashlight/Darkness (Only if light is off)
+            if not self.light_on:
+                self._draw_flashlight(surface)
+
+            # 5. Draw UI/Effects that should ALWAYS be visible
+            if not self.game_over:
+                self._apply_distress_effects(surface)
+                self._draw_cursor(surface) # Cursor stays on top so player can see where they are
+            else:
+                self._draw_game_over(surface)
         else:
-            self._draw_game_over(surface)
+            # Drawing the Death Sequence
+            surface.fill((0, 0, 0)) # Base is always black
+
+            # --- Jumpscare Drawing ---
+            if self.death_phase == 666:
+                # The Jumpscare: Full brightness, no fading
+                surface.blit(self.death_img, (0, 0))
+
+            elif self.death_phase == 2:
+                # Normal fade-in logic
+                alpha = min(255, int((self.death_timer / 2.0) * 255))
+                temp_img = self.death_img.copy()
+                temp_img.set_alpha(alpha)
+                surface.blit(temp_img, (0, 0))
+                
+            elif self.death_phase == 3:
+                # Normal fade-out logic
+                alpha = max(0, 255 - int((self.death_timer / 2.0) * 255))
+                temp_img = self.death_img.copy()
+                temp_img.set_alpha(alpha)
+                surface.blit(temp_img, (0, 0))
 
     # ── Internal helpers ──────────────────────────────────────────────────────
     def _load_next_instruction(self):
@@ -159,6 +235,15 @@ class GameState(BaseState):
             self._load_next_instruction()
         else:
             self.game_over = True
+            self.death_timer = 0.0
+
+            # --- 1/5 Chance for Jumpscare Sequence ---
+            if random.random() < 0.2:
+                self.death_phase = 4  # Start with the 2-second silence
+            else:
+                self.death_phase = 1  # Start normal sequence
+                
+            pygame.mouse.set_visible(False)
     # ── Visual methods ────────────────────────────────────────────────────────
     def _draw_hud(self, surface):
         pygame.draw.rect(surface, HUD_BG, (0, 0, SCREEN_W, HUD_H))
@@ -191,7 +276,7 @@ class GameState(BaseState):
         mx, my        = pygame.mouse.get_pos()
         radius        = 120
         inner_alpha   = 80
-        ambient_alpha = 220
+        ambient_alpha = 255
 
         dark = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
         dark.fill((0, 0, 0, ambient_alpha))
@@ -218,3 +303,38 @@ class GameState(BaseState):
         draw_text(surface, f"FINAL SCORE:  {self.game.score} / {self.instr_sys.total_rounds}",
                   20, WHITE, CX, CY - 10)
         draw_text(surface, "[R] Restart     [ESC] Menu", 14, DIM_WHITE, CX, CY + 40)
+
+    import random
+
+    def _apply_distress_effects(self, surface):
+        if self.distress_intensity <= 0:
+            return
+
+        blur_factor = 1.0 - (self.distress_intensity * 0.2) 
+        temp_w = int(SCREEN_W * blur_factor)
+        temp_h = int(SCREEN_H * blur_factor)
+
+        frame = surface.copy()
+        small_frame = pygame.transform.smoothscale(frame, (temp_w, temp_h))
+        blurred_frame = pygame.transform.scale(small_frame, (SCREEN_W, SCREEN_H))
+        
+        # Draw the blurred version back
+        surface.blit(blurred_frame, (0, 0))
+
+        # --- 2. THE FADE OUT ---
+        # Create a black surface the size of the screen
+        fade_overlay = pygame.Surface((SCREEN_W, SCREEN_H))
+        fade_overlay.fill((0, 0, 0))
+        
+        # Set alpha: 0 is transparent, 255 is solid black
+        # We'll cap it at 200 so the player can still barely see at the last second
+        alpha = int(self.distress_intensity * 200)
+        fade_overlay.set_alpha(alpha)
+        
+        surface.blit(fade_overlay, (0, 0))
+
+        # --- 3. REDUCED SHAKE (Optional) ---
+        # If you want just a tiny "shiver" instead of a heavy shake:
+        if self.distress_intensity > 0.8:
+            tiny_shake = 2 
+            surface.blit(surface, (random.randint(-tiny_shake, tiny_shake), 0))
