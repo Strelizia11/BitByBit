@@ -78,6 +78,7 @@ class GameState(BaseState):
                 if event.key == pygame.K_r:
                     self.on_enter()
                 elif event.key == pygame.K_ESCAPE:
+                    pygame.mouse.set_visible(True) # <-- Restore the cursor
                     self.game.switch_state("menu")
             return
 
@@ -92,6 +93,7 @@ class GameState(BaseState):
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                pygame.mouse.set_visible(True) # <-- Restore the cursor here too
                 self.game.switch_state("menu")
 
     # ── Update ────────────────────────────────────────────────────────────────
@@ -219,8 +221,6 @@ class GameState(BaseState):
         surface.blit(dark, (0, 0))
 
     def _draw_cursor(self, surface):
-        if not self.light_on:
-            return
         mx, my = pygame.mouse.get_pos()
         cursor = self.cur_clicked if self.is_clicked else self.cur_normal
         surface.blit(cursor, (mx - 8, my - 4))
