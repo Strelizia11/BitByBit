@@ -74,7 +74,7 @@ class GameState(BaseState):
         self.light_on   = True
         self.is_clicked = False
 
-        self.instr_sys = InstructionSystem(total_rounds=16)
+        self.instr_sys = InstructionSystem(total_rounds=8)
         self.instr_sys.reset()
 
         # --- timer & tracking ---
@@ -186,14 +186,14 @@ class GameState(BaseState):
             self.instr_alpha = min(1.0, self.instr_alpha + dt * 2.5)
             self.instr_pulse += dt
 
-            # ── Cobweb respawn timer (modified) ────────────────────────────────
+            # ── Cobweb respawn timer ────────────────────────────────
             if not self.cobweb_visible:
                 self.cobweb_timer += dt
                 if self.cobweb_timer >= self.cobweb_respawn_at:
                     self.cobweb_visible    = True
                     self.cobweb_timer      = 0.0
                     self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-                    self._randomize_cobweb_pos() # Move to a new spot near switch[cite: 1]
+                    self._randomize_cobweb_pos() #
 
             time_left = max(0.0, self.round_time_limit - self.round_timer)
             if time_left < 3.0:
