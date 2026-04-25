@@ -24,7 +24,7 @@ class InstructionSystem:
         ]
 
         if is_light_on:
-            valid_pairs.append(("TURN OFF THE LIGHT", "TURN OFF THE LIGHTS"))
+            valid_pairs.append(("TURN OFF THE LIGHT", "TURN OFF THE L1GHT"))
         else:
             valid_pairs.append(("TURN ON THE LIGHT", "TURN ON THE LIHGT"))
 
