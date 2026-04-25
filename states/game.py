@@ -2,6 +2,7 @@ import os
 import math
 import pygame
 import random
+
 from states.base import BaseState
 from states.audio_manager import AudioManager
 audio = AudioManager()
@@ -178,6 +179,7 @@ class GameState(BaseState):
 
     # ── Update ────────────────────────────────────────────────────────────────
     def update(self, dt):
+        audio.update()
         if self.trans_phase != TRANS_IDLE:
             self._update_transition(dt)
             return
@@ -225,6 +227,9 @@ class GameState(BaseState):
                 self.game.switch_state("menu")
 
     def _update_transition(self, dt):
+        audio.stop_music()
+        audio.play("whisper3", channel="whisper", duration=6.5, fadeout=0.5)
+        audio.play("switch_off", channel="switch")
         self.trans_timer += dt
         if self.trans_phase == TRANS_HAND_RISE:
             duration = 1.2
