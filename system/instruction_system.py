@@ -18,15 +18,15 @@ class InstructionSystem:
 
         # Pairs of (Normal Text, Anomaly Text)
         valid_pairs = [
-            ("CLICK THE SWITCH", "CL1CK THE SWITCH"),
-            ("CLICK THE SWITCH FIVE TIMES", "CLICK THE SWITCH FIVE TIM3S"),
-            ("DO NOT CLICK THE SWITCH", "DONT CLICK THE WITCH")
+            ("SIMON SAYS CLICK THE SWITCH", "SIM0N SAYS CL1CK THE SWITCH"),
+            ("SIMON SAYS CLICK THE SWITCH FIVE TIMES", "HE SAID CLICK THE SWITCH FIVE TIM3S"),
+            ("SIMON SAYS DO NOT CLICK THE SWITCH!!!", "S1MON SAYS DONT CLICK THE SWITCH")
         ]
 
         if is_light_on:
-            valid_pairs.append(("TURN OFF THE LIGHT", "TURN OFF THE L1GHT"))
+            valid_pairs.append(("SIMON SAYS TURN OFF THE LIGHT", "SIMON WANTS YOU TO TURN OFF THE L1GHT"))
         else:
-            valid_pairs.append(("TURN ON THE LIGHT", "TURN ON THE LIHGT"))
+            valid_pairs.append(("SIMON SAYS TURN ON THE LIGHT", "SIMON S4YS TURN ON THE LIHGT"))
 
         # Pick a random instruction pair
         normal_text, anomaly_text = random.choice(valid_pairs)
@@ -46,7 +46,7 @@ class InstructionSystem:
         should_follow = (light_was_on_at_start and not is_anomaly) or (not light_was_on_at_start and is_anomaly)
 
         # ── SPECIAL EXCEPTION: The "WITCH" Wordplay ──
-        if base_rule == "DO NOT CLICK THE SWITCH":
+        if base_rule == "SIMON SAYS DO NOT CLICK THE SWITCH!!!":
             if not is_anomaly:
                 # Normal: "DO NOT CLICK THE SWITCH"
                 if light_was_on_at_start:
@@ -62,25 +62,25 @@ class InstructionSystem:
                     return total_clicks == 0
 
                     # ── STANDARD RULES ──
-        elif base_rule == "CLICK THE SWITCH":
+        elif base_rule == "SIMON SAYS CLICK THE SWITCH":
             if should_follow:
                 return total_clicks > 0  # Follow: click at least once
             else:
                 return total_clicks == 0  # Invert: don't click at all
 
-        elif base_rule == "TURN ON THE LIGHT":
+        elif base_rule == "SIMON SAYS TURN OFF THE LIGHT":
             if should_follow:
                 return total_clicks % 2 != 0  # Follow: odd clicks turns it ON
             else:
                 return total_clicks % 2 == 0  # Invert: even clicks keeps it OFF
 
-        elif base_rule == "TURN OFF THE LIGHT":
+        elif base_rule == "SIMON SAYS TURN ON THE LIGHT":
             if should_follow:
                 return total_clicks % 2 != 0  # Follow: odd clicks turns it OFF
             else:
                 return total_clicks % 2 == 0  # Invert: even clicks keeps it ON
 
-        elif base_rule == "CLICK THE SWITCH FIVE TIMES":
+        elif base_rule == "SIMON SAYS CLICK THE SWITCH FIVE TIMES":
             if should_follow:
                 return total_clicks == 5
             else:
