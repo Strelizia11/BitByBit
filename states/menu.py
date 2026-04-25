@@ -1,7 +1,6 @@
 import pygame
 import math
-import os
-from PIL import Image, ImageSequence
+from PIL import Image
 from states.base import BaseState
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
@@ -27,41 +26,29 @@ class MenuState(BaseState):
             pygame.Rect(CX - bw // 2, start_y + i * 64, bw, bh)
             for i in range(len(self.BUTTONS))
         ]
-        
-        # Load animated GIF frames
+
+        # Load GIF background
         self.gif_frames = []
-        self.frame_durations = []
         self.current_frame = 0
         self.frame_timer = 0.0
-        
+        self.frame_duration = 0.1  # Default frame duration
         try:
-            gif_path = os.path.join("assets", "GameMenu.gif")
-            gif = Image.open(gif_path)
-            
-            for frame in ImageSequence.Iterator(gif):
-                # Convert PIL image to pygame surface
-                frame_surface = pygame.image.fromstring(
-                    frame.tobytes(), frame.size, frame.mode
-                )
-                # Scale to screen size
-                frame_surface = pygame.transform.scale(frame_surface, (1920, 1080))
-                self.gif_frames.append(frame_surface)
-                
-                # Get frame duration (in seconds)
-                duration = frame.info.get('duration', 100) / 1000.0  # Convert ms to seconds
-                self.frame_durations.append(duration)
-                
+            gif_path = "assets/GameMenu.gif"
+            with Image.open(gif_path) as gif:
+                for frame in range(gif.n_frames):
+                    gif.seek(frame)
+                    frame_surface = pygame.image.fromstring(
+                        gif.tobytes(), gif.size, gif.mode
+                    ).convert()
+                    # Scale to fit screen while maintaining aspect ratio
+                    frame_surface = pygame.transform.scale(frame_surface, (SCREEN_W, SCREEN_H))
+                    self.gif_frames.append(frame_surface)
+                # Get frame duration if available
+                if hasattr(gif, 'info') and 'duration' in gif.info:
+                    self.frame_duration = gif.info['duration'] / 1000.0  # Convert to seconds
         except Exception as e:
-            print(f"Error loading GIF: {e}")
-            # Fallback to static image if GIF loading fails
-            try:
-                self.bg_image = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
-                self.bg_image = pygame.transform.scale(self.bg_image, (1920, 1080))
-                self.gif_frames = [self.bg_image]  # Single frame
-                self.frame_durations = [1.0]  # 1 second duration
-            except:
-                # Ultimate fallback - solid color
-                self.gif_frames = None
+            print(f"Failed to load GIF: {e}")
+            self.gif_frames = []
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -85,28 +72,21 @@ class MenuState(BaseState):
     def update(self, dt):
         self.time    += dt
         self.fade_in  = min(1.0, self.fade_in + dt * 1.4)
-        
+
         # Update GIF animation
-        if self.gif_frames and len(self.gif_frames) > 1:
+        if self.gif_frames:
             self.frame_timer += dt
-            if self.frame_timer >= self.frame_durations[self.current_frame]:
+            if self.frame_timer >= self.frame_duration:
                 self.frame_timer = 0.0
                 self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
 
     def draw(self, surface):
-        # Draw current GIF frame or fallback
+        # Draw GIF background
         if self.gif_frames:
-            current_frame = self.gif_frames[self.current_frame]
-            surface.blit(current_frame, (0, 0))
+            surface.blit(self.gif_frames[self.current_frame], (0, 0))
         else:
-            # Fallback to solid color if no image loaded
             surface.fill(NEAR_BLACK)
-        
-        # Add dark overlay for better text readability
-        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 120))  # Semi-transparent black overlay
-        surface.blit(overlay, (0, 0))
-        
+
         self._draw_scanlines(surface)
         alpha = int(self.fade_in * 255)
 
