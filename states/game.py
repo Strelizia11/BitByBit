@@ -128,25 +128,6 @@ class GameState(BaseState):
 
     # ── Internal helpers ──────────────────────────────────────────────────────
     def _load_next_instruction(self):
-        result = self.instr_sys.next_instruction()
-        if result is None:
-            self.game_over = True
-            return
-        self.current_text    = result[0]
-        self.current_anomaly = result[1]
-        self.correct_action  = InstructionSystem.correct_action(
-            self.current_anomaly, self.light_on
-        )
-        self.instr_alpha = 0.0
-        self.instr_pulse = 0.0
-
-    def _resolve(self, player_action: str):
-        if player_action == self.correct_action:
-            self.game.score += 1
-        self._load_next_instruction()
-
-    def _load_next_instruction(self):
-        # Pass the current light state to dynamically get the right instruction
         result = self.instr_sys.next_instruction(self.light_on)
 
         if result is None:
@@ -155,6 +136,7 @@ class GameState(BaseState):
 
         self.current_text = result[0]
         self.current_anomaly = result[1]
+        self.current_base_rule = result[2]
 
         # Reset tracking for the new round
         self.round_timer = 0.0
@@ -165,9 +147,9 @@ class GameState(BaseState):
         self.instr_pulse = 0.0
 
     def _resolve_round(self):
-        # Did the player follow the normal rules correctly?
-        success = self.instr_sys.evaluate_normal_action(
-            self.current_text,
+        success = self.instr_sys.evaluate_action(
+            self.current_base_rule,
+            self.current_anomaly,
             self.start_light_state,
             self.clicks_this_round
         )
@@ -176,7 +158,6 @@ class GameState(BaseState):
             self.game.score += 1
             self._load_next_instruction()
         else:
-            # You stated that failing any condition results in game over
             self.game_over = True
     # ── Visual methods ────────────────────────────────────────────────────────
     def _draw_hud(self, surface):
@@ -194,14 +175,17 @@ class GameState(BaseState):
         draw_text(surface, badge_lbl, 12, badge_col, 68, HUD_H // 2)
 
         # Instruction text (centre) with pulse
-        pulse_t   = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
-        base_col  = ANOMALY_COL if self.current_anomaly else INSTRUCTION_COL
+        pulse_t = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
+        base_col = ANOMALY_COL if self.current_anomaly else INSTRUCTION_COL
         pulse_col = lerp_color(base_col, WHITE, pulse_t * 0.15)
         draw_text(surface, self.current_text, 20, pulse_col, CX, HUD_H // 2, bold=True, alpha=alpha)
 
-        # Key hints (right) + score
+        # --- NEW: Timer and Score (right) ---
+        time_left = max(0.0, self.round_time_limit - self.round_timer)
+        time_col = AMBER if time_left > 1.5 else BLOOD_RED  # Turns red when time is almost up
 
-        draw_text(surface, f"SCORE: {self.game.score}", 11, MID_GRAY, SCREEN_W - 95, HUD_H // 2 + 10)
+        draw_text(surface, f"TIME: {time_left:.1f}s", 14, time_col, SCREEN_W - 80, HUD_H // 2 - 10)
+        draw_text(surface, f"SCORE: {self.game.score}", 11, MID_GRAY, SCREEN_W - 80, HUD_H // 2 + 10)
 
     def _draw_flashlight(self, surface):
         mx, my        = pygame.mouse.get_pos()

@@ -10,56 +10,71 @@ class InstructionSystem:
         self.current_round = 0
 
     def next_instruction(self, is_light_on: bool):
-        """Dynamically picks the next instruction based on the current light state."""
+        """Returns (display_text, is_anomaly, base_rule)"""
         if self.current_round >= self.total_rounds:
             return None
 
         self.current_round += 1
 
-        valid_normals = [
-            "CLICK THE SWITCH",
-            "CLICK THE SWITCH FIVE TIMES",
-            "DO NOT CLICK THE SWITCH"
+        # Pairs of (Normal Text, Anomaly Text)
+        valid_pairs = [
+            ("CLICK THE SWITCH", "CL1CK THE SWITCH"),
+            ("CLICK THE SWITCH FIVE TIMES", "CLICK THE SWITCH FIVE TIM3S"),
+            ("DO NOT CLICK THE SWITCH", "DONT CLICK THE WITCH")
         ]
 
-        # Add context-sensitive instructions
         if is_light_on:
-            valid_normals.append("TURN OFF THE LIGHT")
+            valid_pairs.append(("TURN OFF THE LIGHT", "TURN OFF THE LIGHTS"))
         else:
-            valid_normals.append("TURN ON THE LIGHT")
+            valid_pairs.append(("TURN ON THE LIGHT", "TURN ON THE LIHGT"))
 
-        # Pick a random normal instruction (we'll integrate anomalies later)
-        text = random.choice(valid_normals)
-        is_anomaly = False
+        # Pick a random instruction pair
+        normal_text, anomaly_text = random.choice(valid_pairs)
 
-        return text, is_anomaly
+        # 30% chance to be an anomaly
+        is_anomaly = random.random() < 0.30
+        display_text = anomaly_text if is_anomaly else normal_text
+
+        # We return the base "normal_text" so the evaluator knows what rule to check
+        return display_text, is_anomaly, normal_text
 
     @staticmethod
-    def evaluate_normal_action(text: str, light_was_on_at_start: bool, total_clicks: int) -> bool:
-        """Evaluates the player's clicks against your new rules."""
+    def evaluate_action(base_rule: str, is_anomaly: bool, light_was_on_at_start: bool, total_clicks: int) -> bool:
+        """Evaluates if the player survived based on clicks, light state, and anomalies."""
 
-        if text == "CLICK THE SWITCH":
-            if light_was_on_at_start:
-                return total_clicks > 0  # Proceed if they clicked at least once
+        # CORE LOGIC: Should the player Follow or Invert the instruction?
+        # Light ON + Normal -> Follow
+        # Light OFF + Normal -> Invert
+        # Light ON + Anomaly -> Invert
+        # Light OFF + Anomaly -> Follow
+        should_follow = (light_was_on_at_start and not is_anomaly) or (not light_was_on_at_start and is_anomaly)
+
+        if base_rule == "CLICK THE SWITCH":
+            if should_follow:
+                return total_clicks > 0  # Follow: click at least once
             else:
-                return total_clicks == 0  # Proceed if they didn't click
+                return total_clicks == 0  # Invert: don't click at all
 
-        elif text == "TURN ON THE LIGHT":
-            # If light started OFF, an odd number of clicks means it ends up ON
-            return total_clicks % 2 != 0
+        elif base_rule == "TURN ON THE LIGHT":
+            if should_follow:
+                return total_clicks % 2 != 0  # Follow: odd clicks turns it ON
+            else:
+                return total_clicks % 2 == 0  # Invert: even clicks keeps it OFF
 
-        elif text == "TURN OFF THE LIGHT":
-            # If light started ON, an odd number of clicks means it ends up OFF
-            return total_clicks % 2 != 0
+        elif base_rule == "TURN OFF THE LIGHT":
+            if should_follow:
+                return total_clicks % 2 != 0  # Follow: odd clicks turns it OFF
+            else:
+                return total_clicks % 2 == 0  # Invert: even clicks keeps it ON
 
-        elif text == "CLICK THE SWITCH FIVE TIMES":
-            if light_was_on_at_start:
+        elif base_rule == "CLICK THE SWITCH FIVE TIMES":
+            if should_follow:
                 return total_clicks == 5
             else:
                 return total_clicks != 5
 
-        elif text == "DO NOT CLICK THE SWITCH":
-            if light_was_on_at_start:
+        elif base_rule == "DO NOT CLICK THE SWITCH":
+            if should_follow:
                 return total_clicks == 0
             else:
                 return total_clicks > 0
