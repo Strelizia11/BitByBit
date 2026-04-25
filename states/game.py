@@ -18,7 +18,7 @@ BULB_CENTER  = (CX, CY + 30)
 # ── HUD colours ───────────────────────────────────────────────────────────────
 HUD_BG          = (15, 15, 15)
 INSTRUCTION_COL = (220, 220, 220)
-ANOMALY_COL     = (200,  60,  60)
+ANOMALY_COL     = (220, 220, 220)
 FOLLOW_COL      = GREEN_BRIGHT
 IGNORE_COL      = BLOOD_RED
 
