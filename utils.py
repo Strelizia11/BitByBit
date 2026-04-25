@@ -18,7 +18,7 @@ STEEL_DIM   = ( 20,  35,  65)
 GREEN_DIM   = ( 40,  90,  40)
 GREEN_BRIGHT= ( 80, 180,  80)
 
-SCREEN_W, SCREEN_H = 800, 600
+SCREEN_W, SCREEN_H = pygame.display.get_surface().get_size() if pygame.display.get_surface() else (800, 600)
 CX, CY = SCREEN_W // 2, SCREEN_H // 2
 
 # ── Font loader ───────────────────────────────────────────────────────────────

@@ -1,15 +1,8 @@
 import pygame
 import sys
 import os
-from states.menu import MenuState
-from states.disclaimer import DisclaimerState
-from states.mechanics import MechanicsState
-from states.game import GameState
-from states.splash import SplashState
-from states.level2 import Level2State
 
 
-SCREEN_W, SCREEN_H = 800, 600
 FPS   = 60
 TITLE = "Patrick Says HAHAHAHA"
 
@@ -18,7 +11,10 @@ class Game:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN | pygame.SCALED)
+        info = pygame.display.Info()
+        SCREEN_W = info.current_w
+        SCREEN_H = info.current_h
+        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN)
         os.environ["SDL_RENDER_SCALE_QUALITY"]="1"
         pygame.display.set_caption(TITLE)
         self.clock   = pygame.time.Clock()
@@ -30,13 +26,21 @@ class Game:
         self.switch_state("splash")
 
     def _init_states(self):
+        # Imported here (after display init) so utils.py reads the real resolution
+        from states.menu import MenuState
+        from states.disclaimer import DisclaimerState
+        from states.mechanics import MechanicsState
+        from states.game import GameState
+        from states.splash import SplashState
+        from states.level2 import Level2State
+
         self.states = {
             "splash":     SplashState(self),
             "menu":       MenuState(self),
             "disclaimer": DisclaimerState(self),
             "mechanics":  MechanicsState(self),
             "game":       GameState(self),
-            "level2":     Level2State(self),   # ← Level 2
+            "level2":     Level2State(self),
         }
 
     def switch_state(self, name, **kwargs):
