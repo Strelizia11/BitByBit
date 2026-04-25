@@ -5,11 +5,13 @@ from states.disclaimer import DisclaimerState
 from states.mechanics import MechanicsState
 from states.game import GameState
 from states.splash import SplashState
+from states.level2 import Level2State
 
 
 SCREEN_W, SCREEN_H = 800, 600
-FPS = 60
+FPS   = 60
 TITLE = "Patrick Says HAHAHAHA"
+
 
 class Game:
     def __init__(self):
@@ -17,10 +19,10 @@ class Game:
         pygame.mixer.init()
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
         pygame.display.set_caption(TITLE)
-        self.clock = pygame.time.Clock()
+        self.clock   = pygame.time.Clock()
         self.running = True
-        self.score = 0
-        self.states = {}
+        self.score   = 0
+        self.states  = {}
         self.current_state = None
         self._init_states()
         self.switch_state("splash")
@@ -31,7 +33,8 @@ class Game:
             "menu":       MenuState(self),
             "disclaimer": DisclaimerState(self),
             "mechanics":  MechanicsState(self),
-            "game":       GameState(self)
+            "game":       GameState(self),
+            "level2":     Level2State(self),   # ← Level 2
         }
 
     def switch_state(self, name, **kwargs):
