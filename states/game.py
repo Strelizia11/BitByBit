@@ -104,7 +104,7 @@ class GameState(BaseState):
         # --- cobweb obstacle (modified) ---
         self.cobweb_visible     = True
         self.cobweb_timer       = 0.0
-        self.cobweb_respawn_at  = random.uniform(2.0, 3.0)
+        self.cobweb_respawn_at  = random.uniform(5.0, 6.0)
         self.cobweb_clicks      = 0 # New tracking for 3-click health[cite: 1]
         self._randomize_cobweb_pos() # Initialize random start position[cite: 1]
 
@@ -152,7 +152,7 @@ class GameState(BaseState):
                 if self.cobweb_clicks >= 3: # Requires 3 clicks to disappear[cite: 1]
                     self.cobweb_visible    = False
                     self.cobweb_timer      = 0.0
-                    self.cobweb_respawn_at = random.uniform(2.0, 3.0)
+                    self.cobweb_respawn_at = random.uniform(5.0, 6.0)
                     self.cobweb_clicks     = 0 # Reset health for next respawn[cite: 1]
             
             # Only allow switch click if cobweb is removed[cite: 1]
@@ -189,7 +189,7 @@ class GameState(BaseState):
                 if self.cobweb_timer >= self.cobweb_respawn_at:
                     self.cobweb_visible    = True
                     self.cobweb_timer      = 0.0
-                    self.cobweb_respawn_at = random.uniform(2.0, 3.0)
+                    self.cobweb_respawn_at = random.uniform(5.0, 6.0)
                     self._randomize_cobweb_pos() # Move to a new spot near switch[cite: 1]
 
             time_left = max(0.0, self.round_time_limit - self.round_timer)
