@@ -29,26 +29,35 @@ class MenuState(BaseState):
 
         # Load GIF background
         self.gif_frames = []
+        self.frame_durations = []
         self.current_frame = 0
         self.frame_timer = 0.0
-        self.frame_duration = 0.1  # Default frame duration
         try:
             gif_path = "assets/GameMenu.gif"
             with Image.open(gif_path) as gif:
+                # Composite each frame properly onto a running canvas.
+                # GIF is delta-based: frames are partial updates, not full images.
+                # tobytes() on a raw seek gives incomplete frames with white gaps.
+                canvas = Image.new("RGBA", gif.size, (0, 0, 0, 255))
                 for frame in range(gif.n_frames):
                     gif.seek(frame)
+                    # Convert to RGBA so paste handles transparency correctly
+                    frame_rgba = gif.convert("RGBA")
+                    canvas.paste(frame_rgba, (0, 0), frame_rgba)
+
+                    # Convert the composited canvas to a pygame surface
                     frame_surface = pygame.image.fromstring(
-                        gif.tobytes(), gif.size, gif.mode
+                        canvas.tobytes(), canvas.size, "RGBA"
                     ).convert()
-                    # Scale to fit screen while maintaining aspect ratio
-                    frame_surface = pygame.transform.scale(frame_surface, (SCREEN_W, SCREEN_H))
-                    self.gif_frames.append(frame_surface)
-                # Get frame duration if available
-                if hasattr(gif, 'info') and 'duration' in gif.info:
-                    self.frame_duration = gif.info['duration'] / 1000.0  # Convert to seconds
+                    scaled_surface = pygame.transform.scale(frame_surface, (SCREEN_W, SCREEN_H))
+                    self.gif_frames.append(scaled_surface)
+
+                    duration = gif.info.get('duration', 100) / 1000.0
+                    self.frame_durations.append(max(0.05, duration))
         except Exception as e:
             print(f"Failed to load GIF: {e}")
             self.gif_frames = []
+            self.frame_durations = []
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -73,15 +82,17 @@ class MenuState(BaseState):
         self.time    += dt
         self.fade_in  = min(1.0, self.fade_in + dt * 1.4)
 
-        # Update GIF animation
+        # Update GIF animation with per-frame timing
         if self.gif_frames:
             self.frame_timer += dt
-            if self.frame_timer >= self.frame_duration:
-                self.frame_timer = 0.0
+            current_duration = self.frame_durations[self.current_frame]
+            
+            if self.frame_timer >= current_duration:
+                self.frame_timer -= current_duration  # Carry over remaining time for smooth looping
                 self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
 
     def draw(self, surface):
-        # Draw GIF background
+        # Draw GIF background - scale to match actual surface size (fullscreen or windowed)
         if self.gif_frames:
             surface.blit(self.gif_frames[self.current_frame], (0, 0))
         else:
@@ -94,31 +105,15 @@ class MenuState(BaseState):
         flicker = 0.93 + 0.07 * math.sin(self.time * 9.1)
         title_col = tuple(int(c * flicker) for c in AMBER)
 
-        draw_text(surface, "Title", 38, title_col, CX, CY - 110, bold=True, alpha=alpha)
-        draw_text(surface, "ung catchy line if balak nyo lagyan", 14, AMBER_DIM, CX, CY - 72, alpha=alpha)
 
-        # Divider
-        if self.fade_in > 0.3:
-            lw = int(340 * min(1.0, (self.fade_in - 0.3) / 0.5))
-            pygame.draw.line(surface, MID_GRAY, (CX - lw // 2, CY - 48), (CX + lw // 2, CY - 48), 1)
-
-        # Buttons
-        for i, (label, _) in enumerate(self.BUTTONS):
-            rect   = self.btn_rects[i]
-            is_hov = (i == self.hovered)
-            is_exit= (label == "EXIT")
-            bg     = DARK_GRAY if is_hov else BLACK
-            border = (BLOOD_RED if is_exit else AMBER) if is_hov else MID_GRAY
-            text_c = (BLOOD_RED if is_exit else WHITE) if is_hov else DIM_WHITE
-            draw_rect_filled(surface, bg, rect, radius=4)
-            draw_rect_border(surface, border, rect, width=1, radius=4)
-            draw_text(surface, label, 15, text_c, rect.centerx, rect.centery, bold=is_hov, alpha=alpha)
 
         # Footer hint
-        draw_text(surface, "press ENTER to start", 12, MID_GRAY, CX, SCREEN_H - 28, alpha=alpha)
+        _, height = surface.get_size()
+        draw_text(surface, "press ENTER to start", 12, MID_GRAY, CX, height - 28, alpha=alpha)
 
     def _draw_scanlines(self, surface):
-        sl = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-        for y in range(0, SCREEN_H, 4):
-            pygame.draw.line(sl, (0, 0, 0, 18), (0, y), (SCREEN_W, y))
+        width, height = surface.get_size()
+        sl = pygame.Surface((width, height), pygame.SRCALPHA)
+        for y in range(0, height, 4):
+            pygame.draw.line(sl, (0, 0, 0, 18), (0, y), (width, y))
         surface.blit(sl, (0, 0))
