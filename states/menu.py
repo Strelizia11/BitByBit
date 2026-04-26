@@ -37,7 +37,6 @@ class MenuState(BaseState):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
-        audio.play("switch_on", channel="switch")
         self.time    = 0.0
         self.fade_in = 0.0
         self.hovered = -1
