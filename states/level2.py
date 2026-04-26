@@ -9,7 +9,7 @@ from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
     NEAR_BLACK, DARK_GRAY, MID_GRAY, DIM_WHITE, WHITE,
     BLOOD_RED, AMBER, AMBER_DIM, BLACK, GREEN_DIM, GREEN_BRIGHT,
-    SCREEN_W, SCREEN_H, CX, CY, get_font, lerp_color
+    SCREEN_W, SCREEN_H, CX, CY, get_font, lerp_color, resource_path
 )
 
 audio = AudioManager()
@@ -55,51 +55,51 @@ class Level2State(BaseState):
 
         # --- light switch images ---
         self.img_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/light-on1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-off1.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/light-off1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)
 
         # --- background images ---
         self.bg_lights_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "lvl2-background-lights-on.png")).convert(),
+            pygame.image.load(resource_path("assets/lvl2-background-lights-on.png")).convert(),
             (SCREEN_W, SCREEN_H)
         )
         self.bg_lights_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "lvl2-background-lights-off.png")).convert(),
+            pygame.image.load(resource_path("assets/lvl2-background-lights-off.png")).convert(),
             (SCREEN_W, SCREEN_H)
         )
 
         # --- window images (all 4 states) — scaled to WIN_W x WIN_H ---
         self.img_window_close_on  = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "window-close-on.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/window-close-on.png")).convert_alpha(),
             (WIN_W, WIN_H))
         self.img_window_open_on   = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "window-open-on.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/window-open-on.png")).convert_alpha(),
             (WIN_W, WIN_H))
         self.img_window_open_off  = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "window-open-off.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/window-open-off.png")).convert_alpha(),
             (WIN_W, WIN_H))
         self.img_window_close_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "window-close-off.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/window-close-off.png")).convert_alpha(),
             (WIN_W, WIN_H))
 
         # --- door images (all 4 states) — scaled to DOOR_W x DOOR_H ---
         self.img_door_close_on  = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "door-close-on.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/door-close-on.png")).convert_alpha(),
             (DOOR_W, DOOR_H))
         self.img_door_open_on   = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "door-open-on.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/door-open-on.png")).convert_alpha(),
             (DOOR_W, DOOR_H))
         self.img_door_open_off  = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "door-open-off.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/door-open-off.png")).convert_alpha(),
             (DOOR_W, DOOR_H))
         self.img_door_close_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "door-close-off.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/door-close-off.png")).convert_alpha(),
             (DOOR_W, DOOR_H))
 
         # Rects — window LEFT of switch, door RIGHT of switch
@@ -108,11 +108,11 @@ class Level2State(BaseState):
 
         # --- cursor images ---
         self.cur_normal = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "hand.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/hand.png")).convert_alpha(),
             (32, 32)
         )
         self.cur_clicked = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "hand_clicked.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/hand_clicked.png")).convert_alpha(),
             (32, 32)
         )
         pygame.mouse.set_visible(False)
@@ -156,10 +156,10 @@ class Level2State(BaseState):
         self.death_timer = 0.0
         self.death_phase = 0
 
-        self.death_img = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
+        self.death_img = pygame.image.load(resource_path("assets/girl.jpg")).convert()
         self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
 
-        self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
+        self.jumpscare = pygame.image.load(resource_path("assets/jumpscare.jpg")).convert()
         self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
 
     # ── Input ─────────────────────────────────────────────────────────────────

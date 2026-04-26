@@ -3,7 +3,7 @@ from PIL import Image
 from states.audio_manager import AudioManager
 from states.base import BaseState
 from utils import (
-    NEAR_BLACK, SCREEN_W, SCREEN_H, get_font_secondary
+    NEAR_BLACK, SCREEN_W, SCREEN_H, get_font_secondary, resource_path
 )
 audio = AudioManager()
 # ── Typography ────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ class MenuState(BaseState):
         self.frame_durations = []
         self.current_frame   = 0
         self.frame_timer     = 0.0
-        self._load_gif("assets/GameMenu.gif")
+        self._load_gif(resource_path("assets/GameMenu.gif"))
         audio.play_music("menu", loop=True)
 
         # Scanlines (pre-built once)

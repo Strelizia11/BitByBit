@@ -1,6 +1,6 @@
 import pygame
 from states.base import BaseState
-from utils import SCREEN_W, SCREEN_H, CX, CY, NEAR_BLACK
+from utils import SCREEN_W, SCREEN_H, CX, CY, NEAR_BLACK, resource_path
 
 
 class SplashState(BaseState):
@@ -10,7 +10,7 @@ class SplashState(BaseState):
         self.alpha = 0
 
         # --- Logo ---
-        original_image = pygame.image.load("./assets/BitByBit_Logo.png").convert_alpha()
+        original_image = pygame.image.load(resource_path("./assets/BitByBit_Logo.png")).convert_alpha()
         custom_size = (400, 400)
         self.image = pygame.transform.smoothscale(original_image, custom_size)
         self.rect = self.image.get_rect(center=(CX, CY - 30))  # Shift up slightly to make room for text

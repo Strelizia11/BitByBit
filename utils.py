@@ -1,5 +1,6 @@
 import pygame
 import os
+import sys
 
 # ── Palette ──────────────────────────────────────────────────────────────────
 BLACK       = (0,   0,   0)
@@ -30,7 +31,7 @@ def get_font(size: int, bold: bool = False) -> pygame.font.Font:
     """Primary font for menu and UI elements"""
     key = (size, bold)
     if key not in _font_cache:
-        font_path = "assets/fonts/arial.ttf"  # Path to your font file
+        font_path = resource_path("assets/fonts/arial.ttf")  # Path to your font file
         if os.path.exists(font_path):
             _font_cache[key] = pygame.font.Font(font_path, size)
         else:
@@ -42,7 +43,7 @@ def get_font_secondary(size: int, bold: bool = False) -> pygame.font.Font:
     """Secondary font for body text and alternative UI"""
     key = (size, bold)
     if key not in _font_cache_secondary:
-        font_path = "assets/fonts/horroroid.ttf"  # Change to a different font if desired
+        font_path = resource_path("assets/fonts/horroroid.ttf")  # Change to a different font if desired
         if os.path.exists(font_path):
             _font_cache_secondary[key] = pygame.font.Font(font_path, size)
         else:
@@ -74,3 +75,14 @@ def draw_rect_border(surface, color, rect, width=1, radius=6):
 
 def draw_rect_filled(surface, color, rect, radius=6):
     pygame.draw.rect(surface, color, rect, border_radius=radius)
+
+
+
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS  # PyInstaller temp folder
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)

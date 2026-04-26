@@ -1,5 +1,7 @@
 import pygame
 
+from utils import resource_path
+
 
 class AudioManager:
     def __init__(self):
@@ -34,28 +36,28 @@ class AudioManager:
     # AUTO LOAD SFX
     # ─────────────────────────────
     def _load_all_sfx(self):
-        self.load_sound("switch_on", "assets/switch_on.wav")
-        self.load_sound("switch_off", "assets/switch_off.wav")
-        self.load_sound("button_click", "assets/button_click.wav")
-        self.load_sound("window_open", "assets/window_open.wav")
-        self.load_sound("window_close", "assets/window_close.wav")
-        self.load_sound("door_open", "assets/door_open.wav")
-        self.load_sound("door_close", "assets/door_close.wav")
-        self.load_sound("whisper1", "assets/whisper1.wav")
-        self.load_sound("whisper2", "assets/whisper2.wav")
-        self.load_sound("whisper3", "assets/whisper3.wav")
-        self.load_sound("jumpscare1", "assets/jumpscare1.wav")
-        self.load_sound("jumpscare2", "assets/jumpscare2.wav")
-        self.load_sound("breathing", "assets/breathing.wav")
-        self.load_sound("ending", "assets/ending.wav")
-        self.load_sound("intense", "assets/intense.wav")
+        self.load_sound("switch_on", resource_path("assets/switch_on.wav"))
+        self.load_sound("switch_off", resource_path("assets/switch_off.wav"))
+        self.load_sound("button_click", resource_path("assets/button_click.wav"))
+        self.load_sound("window_open", resource_path("assets/window_open.wav"))
+        self.load_sound("window_close", resource_path("assets/window_close.wav"))
+        self.load_sound("door_open", resource_path("assets/door_open.wav"))
+        self.load_sound("door_close", resource_path("assets/door_close.wav"))
+        self.load_sound("whisper1", resource_path("assets/whisper1.wav"))
+        self.load_sound("whisper2", resource_path("assets/whisper2.wav"))
+        self.load_sound("whisper3", resource_path("assets/whisper3.wav"))
+        self.load_sound("jumpscare1", resource_path("assets/jumpscare1.wav"))
+        self.load_sound("jumpscare2", resource_path("assets/jumpscare2.wav"))
+        self.load_sound("breathing", resource_path("assets/breathing.wav"))
+        self.load_sound("ending", resource_path("assets/ending.wav"))
+        self.load_sound("intense", resource_path("assets/intense.wav"))
 
     # ─────────────────────────────
     # AUTO LOAD MUSIC
     # ─────────────────────────────
     def _load_all_music(self):
-        self.load_music("ambience", "assets/ambience.wav")
-        self.load_music("menu","assets/flicker.wav")
+        self.load_music("ambience", resource_path("assets/ambience.wav"))
+        self.load_music("menu", resource_path("assets/flicker.wav"))
 
     # ─────────────────────────────
     # LOAD SFX

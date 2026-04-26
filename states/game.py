@@ -12,7 +12,7 @@ from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
     NEAR_BLACK, DARK_GRAY, MID_GRAY, DIM_WHITE, WHITE,
     BLOOD_RED, AMBER, AMBER_DIM, BLACK, GREEN_DIM, GREEN_BRIGHT,
-    SCREEN_W, SCREEN_H, CX, CY, get_font, lerp_color
+    SCREEN_W, SCREEN_H, CX, CY, get_font, lerp_color, resource_path
 )
 
 # ── Layout constants ───────────────────────────────────────────────────────────
@@ -47,38 +47,38 @@ class GameState(BaseState):
         audio.play_music("ambience", loop=True)
         # --- images ---
         self.img_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/light-on1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "light-off1.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/light-off1.png")).convert_alpha(),
             BULB_SIZE
         )
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)
 
         # --- background images ---
         self.bg_light_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "bg_light.jpg")).convert(),
+            pygame.image.load(resource_path("assets/bg_light.jpg")).convert(),
             (SCREEN_W, SCREEN_H)
         )
         self.bg_light_off = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "blood_red.png")).convert(),
+            pygame.image.load(resource_path("assets/blood_red.png")).convert(),
             (SCREEN_W, SCREEN_H)
         )
 
         # --- cursor images ---
         self.cur_normal = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "hand.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/hand.png")).convert_alpha(),
             (32, 32)
         )
         self.cur_clicked = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "hand_clicked.png")).convert_alpha(),
+            pygame.image.load(resource_path("assets/hand_clicked.png")).convert_alpha(),
             (32, 32)
         )
         pygame.mouse.set_visible(False)
 
         # --- simon hand image for cutscene ---
-        simon_hand_path = os.path.join("assets", "simon_hand.png")
+        simon_hand_path = resource_path("assets/simon_hand.png")
         raw_hand = pygame.image.load(simon_hand_path).convert_alpha()
         self.simon_hand_img = pygame.transform.scale(raw_hand, (520, 560))
 
@@ -110,25 +110,25 @@ class GameState(BaseState):
         self.death_timer = 0.0
         self.death_phase = 0
 
-        self.death_img = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
+        self.death_img = pygame.image.load(resource_path("assets/girl.jpg")).convert()
         self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
 
-        self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
+        self.jumpscare = pygame.image.load(resource_path("assets/jumpscare.jpg")).convert()
         self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
 
         # --- cobweb obstacle ---
         # Load all three damage state images, each scaled to fill the screen
         self.cobweb_imgs = [
             pygame.transform.scale(
-                pygame.image.load(os.path.join("assets", "cobweb1-damage0.png")).convert_alpha(),
+                pygame.image.load(resource_path("assets/cobweb1-damage0.png")).convert_alpha(),
                 (SCREEN_W, SCREEN_H)
             ),
             pygame.transform.scale(
-                pygame.image.load(os.path.join("assets", "cobweb1-damage1.png")).convert_alpha(),
+                pygame.image.load(resource_path("assets/cobweb1-damage1.png")).convert_alpha(),
                 (SCREEN_W, SCREEN_H)
             ),
             pygame.transform.scale(
-                pygame.image.load(os.path.join("assets", "cobweb1-damage2.png")).convert_alpha(),
+                pygame.image.load(resource_path("assets/cobweb1-damage2.png")).convert_alpha(),
                 (SCREEN_W, SCREEN_H)
             ),
         ]
