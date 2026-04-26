@@ -27,39 +27,41 @@ class InstructionSystem:
         if self.current_round == self.total_rounds:
             if is_light_on:
                 text = "SIMON SAYS DO NOT CLICK THE SWITCH!!!"
+                base_rule = "SIMON SAYS DO NOT CLICK THE SWITCH"
             else:
-                text = "SIMON SAYS CLICK THE SWITCH"
+                text = "CL1CK THE SW1TCH"
+                base_rule = "CL1CK THE SW1TCH"
             # Round 8 is never an anomaly – always meant to be followed literally
-            return text, False, text
+            return text, False, base_rule
 
         # ── Rounds 1-7: normal random pool ───────────────────────────────────
         valid_pairs = [
-            ("SIMON SAYS CLICK THE SWITCH",            "CL1CK THE SW1TCH"),
+            ("SIMON SAYS CLICK THE SWITCH", "CL1CK THE SW1TCH"),
             ("SIMON SAYS CLICK THE SWITCH FIVE TIMES", "HE SAID CLICK THE SWITCH FIVE TIM3S"),
-            ("SIMON SAYS DO NOT CLICK THE SWITCH",  "S1MON SAYS DONT CLICK THE SWITCH"),
-            ("SIMON SAYS CLICK THE SWITCH 2 TIMES",    "FL1ICK THE SWITCH 2 TIMES"),
-            ("SIMON SAYS CLICK THE SWITCH 3 TIMES",    "IT SAYS CLICK THE SWITCH 3 TIMES"),
+            ("SIMON SAYS DO NOT CLICK THE SWITCH", "S1MON SAYS DONT CLICK THE SWITCH"),
+            ("SIMON SAYS CLICK THE SWITCH 2 TIMES", "FL1ICK THE SWITCH 2 TIMES"),
+            ("SIMON SAYS CLICK THE SWITCH 3 TIMES", "IT SAYS CLICK THE SWITCH 3 TIMES"),
         ]
 
         if is_light_on:
             valid_pairs.append(("SIMON SAYS TURN OFF THE LIGHT",
-                                 "SIMON WANTS YOU TO TURN OFF THE L1GHT"))
+                                "SIMON WANTS YOU TO TURN OFF THE L1GHT"))
         else:
             valid_pairs.append(("SIMON SAYS TURN ON THE LIGHT",
-                                 "TURN ON THE LIGHT"))
+                                "TURN ON THE LIGHT"))
 
         # Add window tasks only when the caller explicitly supplies window state.
         # This keeps window instructions restricted to level 2.
         if is_window_open is not None:
             if is_window_open:
                 valid_pairs.append(("SIMON SAYS CLOSE THE WINDOW",
-                                     "CL0SE THE WINDOW"))
+                                    "CL0SE THE WINDOW"))
             else:
                 valid_pairs.append(("SIMON SAYS OPEN THE WINDOW",
-                                     "0PEN THE WINDOW"))
+                                    "0PEN THE WINDOW"))
 
         normal_text, anomaly_text = random.choice(valid_pairs)
-        is_anomaly   = random.random() < 0.30
+        is_anomaly = random.random() < 0.30
         display_text = anomaly_text if is_anomaly else normal_text
 
         return display_text, is_anomaly, normal_text
@@ -78,9 +80,9 @@ class InstructionSystem:
         if base_rule == "SIMON SAYS DO NOT CLICK THE SWITCH":
             if not is_anomaly:
                 if light_was_on_at_start:
-                    return total_clicks == 0   # follow → don't click
+                    return total_clicks == 0  # follow → don't click
                 else:
-                    return total_clicks > 0    # invert → click
+                    return total_clicks > 0  # invert → click
             else:
                 if light_was_on_at_start:
                     return total_clicks > 0
@@ -110,7 +112,7 @@ class InstructionSystem:
                 return total_clicks == 5
             else:
                 return total_clicks != 5
-            
+
         elif base_rule == "SIMON SAYS CLICK THE SWITCH 2 TIMES":
             if should_follow:
                 return total_clicks == 2
