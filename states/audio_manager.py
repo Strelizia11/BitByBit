@@ -48,6 +48,7 @@ class AudioManager:
         self.load_sound("jumpscare2", "assets/jumpscare2.wav")
         self.load_sound("breathing", "assets/breathing.wav")
         self.load_sound("ending", "assets/ending.wav")
+        self.load_sound("intense", "assets/intense.wav")
 
     # ─────────────────────────────
     # AUTO LOAD MUSIC

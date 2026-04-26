@@ -102,6 +102,8 @@ class Level2State(BaseState):
         self.death_img = pygame.image.load(os.path.join("assets", "girl.jpg")).convert()
         self.death_img = pygame.transform.scale(self.death_img, (SCREEN_W, SCREEN_H))
 
+        self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
+        self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
     # ── Input ─────────────────────────────────────────────────────────────────
     def handle_event(self, event):
         if self.game_over:
@@ -174,9 +176,11 @@ class Level2State(BaseState):
                 if self.death_timer > 2.0:
                     self.death_phase = 666
                     self.death_timer = 0.0
-
+                    audio.play("intense", channel="jumpscare")
             elif self.death_phase == 666:
                 if self.death_timer > 4.0:
+                    if "jumpscare" in audio.channels:
+                        audio.channels["jumpscare"].stop()
                     pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
 
@@ -211,8 +215,9 @@ class Level2State(BaseState):
             self._draw_game_over(surface)
 
             if self.death_phase == 666:
-                surface.blit(self.death_img, (0, 0))
-
+                surface.blit(self.jumpscare, (0, 0))
+                if self.death_timer > 3.8:
+                    surface.fill((0, 0, 0))
             elif self.death_phase == 2:
                 alpha = min(255, int((self.death_timer / 2.0) * 255))
                 temp_img = self.death_img.copy()

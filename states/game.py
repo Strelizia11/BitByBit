@@ -238,8 +238,11 @@ class GameState(BaseState):
                 if self.death_timer > 2.0:
                     self.death_phase = 666
                     self.death_timer = 0.0
+                    audio.play("intense", channel="jumpscare")
             elif self.death_phase == 666:
                 if self.death_timer > 4.0:
+                    if "jumpscare" in audio.channels:
+                        audio.channels["jumpscare"].stop()
                     pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
             elif self.death_phase == 1 and self.death_timer > 3.0:
@@ -327,7 +330,8 @@ class GameState(BaseState):
             surface.fill((0, 0, 0))
             if self.death_phase == 666:
                 surface.blit(self.jumpscare, (0, 0))
-                audio.play("switch_on", channel="switch")
+                if self.death_timer > 3.8:
+                    surface.fill((0, 0, 0))
             elif self.death_phase == 2:
                 alpha = min(255, int((self.death_timer / 2.0) * 255))
                 temp_img = self.death_img.copy()
