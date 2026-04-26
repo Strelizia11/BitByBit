@@ -198,13 +198,12 @@ class Level2State(BaseState):
         img = self.img_on if self.light_on else self.img_off
         surface.blit(img, self.img_rect)
 
-        self._draw_hud(surface)
 
         self._draw_window(surface)
 
         if not self.light_on:
             self._draw_flashlight(surface)
-
+        self._draw_hud(surface)
         if not self.game_over:
             self._apply_distress_effects(surface)
             self._draw_cursor(surface)
@@ -271,32 +270,45 @@ class Level2State(BaseState):
 
     # ── Visual helpers ────────────────────────────────────────────────────────
     def _draw_hud(self, surface):
-        pygame.draw.rect(surface, HUD_BG, (0, 0, SCREEN_W, HUD_H))
-
-        if self.game_over:
-            draw_text(surface, "LEVEL 2 COMPLETE", 18, AMBER, CX, HUD_H // 2, bold=True)
-            return
 
         alpha = int(self.instr_alpha * 255)
+        # ── TEXTBOX SETTINGS ─────────────────────────
+        box_width = 700
+        box_height = 80
+        box_x = CX - box_width // 2
+        box_y = HUD_H + 40
 
-        badge_col = AMBER if self.light_on else (50, 90, 170)
-        badge_lbl = "LIGHT: ON" if self.light_on else "LIGHT: OFF"
-        draw_text(surface, badge_lbl, 12, badge_col, 68, HUD_H // 2)
+        # ── COLOR CHANGE BASED ON LIGHT ──────────────
+        if self.light_on:
+            text_color = BLACK
+            border_color = BLACK
+            fill_alpha = 0
+        else:
+            text_color = BLOOD_RED
+            border_color = BLOOD_RED
+            fill_alpha = 50
 
-        pulse_t = 0.5 + 0.5 * math.sin(self.instr_pulse * 4.0)
-        base_col = ANOMALY_COL if self.current_is_anomaly else INSTRUCTION_COL
-        pulse_col = lerp_color(base_col, WHITE, pulse_t * 0.15)
-        draw_text(surface, self.current_text, 20, pulse_col,
-                  CX, HUD_H // 2, bold=True, alpha=alpha)
+        # ── DRAW TRANSPARENT BOX ────────────────────────────────
+        box_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        box_surface.fill((*border_color, fill_alpha))
 
-        time_left = max(0.0, self.round_time_limit - self.round_timer)
-        time_col = AMBER if time_left > 1.5 else BLOOD_RED
+        # Draw border directly on the transparent surface
+        pygame.draw.rect(box_surface, (*border_color, 255), (0, 0, box_width, box_height), 3, border_radius=12)
 
-        draw_text(surface, f"TIME: {time_left:.1f}s", 14, time_col,
-                  SCREEN_W - 80, HUD_H // 2 - 10)
-        draw_text(surface, f"SCORE: {self.game.score}", 11, MID_GRAY,
-                  SCREEN_W - 80, HUD_H // 2 + 10)
+        # Blit the transparent box onto your main surface
+        surface.blit(box_surface, (box_x, box_y))
 
+        # ── TEXT INSIDE BOX ─────────────────────────
+        draw_text(
+            surface,
+            self.current_text,
+            25,
+            text_color,
+            CX,
+            box_y + box_height // 2,
+            bold=True,
+            alpha=alpha
+        )
     def _draw_window(self, surface):
         """
         Draw the window frame and panes based on open/closed state.

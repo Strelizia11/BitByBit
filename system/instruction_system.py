@@ -5,10 +5,10 @@ from typing import Optional
 class InstructionSystem:
     def __init__(self, total_rounds: int = 8):
         self.total_rounds = total_rounds
-        self.current_round = 0
+        self.current_round = 7
 
     def reset(self):
-        self.current_round = 0
+        self.current_round = 7
 
     def next_instruction(self, is_light_on: bool, is_window_open: Optional[bool] = None):
         """Returns (display_text, is_anomaly, base_rule).
