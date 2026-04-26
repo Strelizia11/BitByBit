@@ -80,7 +80,7 @@ class GameState(BaseState):
         # --- simon hand image for cutscene ---
         simon_hand_path = os.path.join("assets", "simon_hand.png")
         raw_hand = pygame.image.load(simon_hand_path).convert_alpha()
-        self.simon_hand_img = pygame.transform.scale(raw_hand, (500, 540))
+        self.simon_hand_img = pygame.transform.scale(raw_hand, (520, 560))
 
         # --- light state ---
         self.light_on = True
