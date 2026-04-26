@@ -17,7 +17,7 @@ from utils import (
 
 # ── Layout constants ───────────────────────────────────────────────────────────
 HUD_H = 52
-BULB_SIZE = (200, 280 )
+BULB_SIZE = (300, 480 )
 BULB_CENTER = (CX, CY + 30)
 
 # ── HUD colours ───────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ class GameState(BaseState):
 
         # --- background images ---
         self.bg_light_on = pygame.transform.scale(
-            pygame.image.load(os.path.join("assets", "plain_red.png")).convert(),
+            pygame.image.load(os.path.join("assets", "bg_light.jpg")).convert(),
             (SCREEN_W, SCREEN_H)
         )
         self.bg_light_off = pygame.transform.scale(
@@ -396,29 +396,33 @@ class GameState(BaseState):
         alpha = int(self.instr_alpha * 255)
         # ── TEXTBOX SETTINGS ─────────────────────────
         box_width = 700  # 🔥 reduce width here
-        box_height = 50
+        box_height = 80
         box_x = CX - box_width // 2
         box_y = HUD_H + 40  # 🔥 move downward here
 
         # ── COLOR CHANGE BASED ON LIGHT ──────────────
         if self.light_on:
-            box_color = (30, 30, 30)  # dark box
-            text_color = WHITE
+            text_color = BLACK
+            border_color = BLACK
         else:
-            box_color = BLOOD_RED  # 🔥 red box when light OFF
-            text_color = BLACK  # 🔥 black text
+            text_color = BLOOD_RED
+            border_color = BLOOD_RED
 
-        # ── DRAW BOX ────────────────────────────────
-        pygame.draw.rect(surface, box_color, (box_x, box_y, box_width, box_height), border_radius=8)
+        # ── DRAW TRANSPARENT BOX ────────────────────────────────
+        box_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        box_surface.fill((0, 0, 0, 0))  # fully transparent fill
 
-        # Optional border
-        pygame.draw.rect(surface, WHITE, (box_x, box_y, box_width, box_height), 2, border_radius=8)
+        # Draw border directly on the transparent surface
+        pygame.draw.rect(box_surface, (*border_color, 255), (0, 0, box_width, box_height), 4, border_radius=12)
+
+        # Blit the transparent box onto your main surface
+        surface.blit(box_surface, (box_x, box_y))
 
         # ── TEXT INSIDE BOX ─────────────────────────
         draw_text(
             surface,
             self.current_text,
-            18,
+            25,
             text_color,
             CX,
             box_y + box_height // 2,
@@ -443,7 +447,7 @@ class GameState(BaseState):
 
     def _draw_flashlight(self, surface):
         mx, my = pygame.mouse.get_pos()
-        radius = 120
+        radius = 160
         inner_alpha = 80
         ambient_alpha = 255
         dark = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)

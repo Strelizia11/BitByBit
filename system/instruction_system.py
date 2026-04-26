@@ -37,6 +37,8 @@ class InstructionSystem:
             ("SIMON SAYS CLICK THE SWITCH",            "SIM0N SAYS CL1CK THE SWITCH"),
             ("SIMON SAYS CLICK THE SWITCH FIVE TIMES", "HE SAID CLICK THE SWITCH FIVE TIM3S"),
             ("SIMON SAYS DO NOT CLICK THE SWITCH!!!",  "S1MON SAYS DONT CLICK THE SWITCH"),
+            ("SIMON SAYS CLICK THE SWITCH 2 TIMES",    "S1MONED SAYS CLICK THE SWITCH 2 TIMES")
+            ("SIMON SAYS CLICK THE SWITCH 3 TIMES",    "IT SAYS CLICK THE SWITCH 3 TIMES")
         ]
 
         if is_light_on:
@@ -108,6 +110,18 @@ class InstructionSystem:
                 return total_clicks == 5
             else:
                 return total_clicks != 5
+            
+        elif base_rule == "SIMON SAYS CLICK THE SWITCH 2 TIMES":
+            if should_follow:
+                return total_clicks == 2
+            else:
+                return total_clicks != 2
+
+        elif base_rule == "SIMON SAYS CLICK THE SWITCH 3 TIMES":
+            if should_follow:
+                return total_clicks == 3
+            else:
+                return total_clicks != 3
 
         # ── Window tasks ──
         elif base_rule == "SIMON SAYS OPEN THE WINDOW":

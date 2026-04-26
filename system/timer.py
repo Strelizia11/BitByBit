@@ -2,7 +2,7 @@ import pygame
 from utils import SCREEN_W, get_font, GREEN_BRIGHT, BLOOD_RED, AMBER, MID_GRAY
 
 
-TIMER_DURATION = 10.0   # seconds per instruction
+TIMER_DURATION = 15.0   # seconds per instruction
 
 
 class Timer:
