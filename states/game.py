@@ -80,7 +80,7 @@ class GameState(BaseState):
         # --- simon hand image for cutscene ---
         simon_hand_path = os.path.join("assets", "simon_hand.png")
         raw_hand = pygame.image.load(simon_hand_path).convert_alpha()
-        self.simon_hand_img = pygame.transform.scale(raw_hand, (120, 160))
+        self.simon_hand_img = pygame.transform.scale(raw_hand, (520, 560))
 
         # --- light state ---
         self.light_on = True
@@ -352,13 +352,15 @@ class GameState(BaseState):
         img = self.img_on if self.light_on else self.img_off
         surface.blit(img, self.img_rect)
         """self._draw_hud(surface)"""
-        if not self.light_on:
-            self._draw_flashlight(surface)
+
         if self.trans_phase in (TRANS_HAND_RISE, TRANS_HAND_CLICK, TRANS_HAND_EXIT):
             hx = CX - self.simon_hand_img.get_width() // 2
             hy = int(self.hand_y)
 
             surface.blit(self.simon_hand_img, (hx, hy))
+            
+        if not self.light_on:
+            self._draw_flashlight(surface)
 
         if self.trans_phase in (TRANS_BLACKOUT, TRANS_TYPING, TRANS_TO_LVL2):
             overlay = pygame.Surface((SCREEN_W, SCREEN_H))
