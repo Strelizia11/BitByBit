@@ -418,16 +418,18 @@ class GameState(BaseState):
         if self.light_on:
             text_color = BLACK
             border_color = BLACK
+            fill_alpha = 0
         else:
             text_color = BLOOD_RED
             border_color = BLOOD_RED
+            fill_alpha = 50
 
         # ── DRAW TRANSPARENT BOX ────────────────────────────────
         box_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
-        box_surface.fill((0, 0, 0, 0))  # fully transparent fill
+        box_surface.fill((*border_color, fill_alpha))
 
         # Draw border directly on the transparent surface
-        pygame.draw.rect(box_surface, (*border_color, 255), (0, 0, box_width, box_height), 4, border_radius=12)
+        pygame.draw.rect(box_surface, (*border_color, 255), (0, 0, box_width, box_height), 3, border_radius=12)
 
         # Blit the transparent box onto your main surface
         surface.blit(box_surface, (box_x, box_y))
@@ -451,7 +453,7 @@ class GameState(BaseState):
 
     def _draw_flashlight(self, surface):
         mx, my = pygame.mouse.get_pos()
-        radius = 160
+        radius = 200
         inner_alpha = 80
         ambient_alpha = 255
         dark = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
