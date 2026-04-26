@@ -6,19 +6,25 @@ from utils import (
 )
 
 # ── Typography ────────────────────────────────────────────────────────────────
-SIZE_NORMAL  = 120                   # non-hovered font size
-SIZE_HOVERED = 190                   # hovered font size (bold, large)
-COL_NORMAL   = (130, 130, 130)      # dim gray — non-hovered
-COL_HOVERED  = (245, 245, 245)      # near-white — hovered
+SIZE_NORMAL  = 100                   # non-hovered font size (slightly smaller for contrast)
+SIZE_HOVERED = 180                   # hovered font size (bold, large)
+COL_NORMAL   = (55, 55, 55)         # very dim — makes hover contrast dramatic
+COL_HOVERED  = (210, 30, 30)        # blood red — horror-thematic pop
 
 # ── Layout ────────────────────────────────────────────────────────────────────
-MENU_X        = 100                  # left edge of all labels
-MENU_TOP_FRAC = 0.50                # top of menu block as fraction of screen height
-ROW_H         = int(SCREEN_H * 0.14)  # fixed row height / spacing (~84 px at 600p)
+MENU_X        = 130                  # left edge of all labels
+MENU_TOP_FRAC = 0.53                # top of menu block as fraction of screen height
+ROW_H         = int(SCREEN_H * 0.13)  # fixed row height / spacing (~84 px at 600p)
 
 # ── Animation ─────────────────────────────────────────────────────────────────
 HOVER_SPEED    = 12.0               # lerp speed on hover
 SCANLINE_ALPHA = 18                 # scanline darkness
+
+# ── Effects ───────────────────────────────────────────────────────────────────
+SHADOW_OFFSET  = 5                  # px offset for drop shadow
+SHADOW_COL     = (80, 0, 0)         # dark red shadow (only visible on hover)
+INDICATOR      = "›"                # sliding hover indicator character
+INDICATOR_GAP  = 10                 # gap between indicator and text
 
 
 class MenuState(BaseState):
@@ -168,38 +174,66 @@ class MenuState(BaseState):
         else:
             self._draw_menu_items(surface, alpha)
 
-
     def _draw_menu_items(self, surface, alpha):
         menu_top = int(SCREEN_H * MENU_TOP_FRAC)
+
+        # How much is the "most hovered" item — used to shrink others
+        max_t = max(self.hover_t)
 
         for i, (label, _) in enumerate(self.MENU_ITEMS):
             t = self.hover_t[i]
 
-            size = int(SIZE_NORMAL + (SIZE_HOVERED - SIZE_NORMAL) * t)
+            # Shrink inactive items when another is hovered
+            shrink = 1.0
+            if max_t > 0.25 and t < 0.1:
+                shrink = 0.82 + 0.18 * (1.0 - max_t)   # lerps 0.82→1.0 as hover fades
+
+            size = int((SIZE_NORMAL + (SIZE_HOVERED - SIZE_NORMAL) * t) * shrink)
             bold = t > 0.3
             col  = _lerp_color(COL_NORMAL, COL_HOVERED, t)
 
             font = get_font_secondary(size, bold=bold)
-            img  = font.render(label, True, col)
 
-            # Centre text vertically within its fixed row band
+            # ── Centre text vertically in its row ─────────────────────────
             row_top    = menu_top + i * ROW_H
             row_centre = row_top + ROW_H // 2
-            y          = row_centre - img.get_height() // 2
+
+            # ── 1. Shadow pass (offset, dark-red, fades in with hover) ───
+            if t > 0.05:
+                shadow_surf = font.render(label, True, SHADOW_COL)
+                shadow_surf.set_alpha(int(alpha * t * 0.65))
+                shadow_y = row_centre - shadow_surf.get_height() // 2
+                surface.blit(shadow_surf, (MENU_X + SHADOW_OFFSET, shadow_y + SHADOW_OFFSET))
+
+            # ── 2. Main text ──────────────────────────────────────────────
+            img = font.render(label, True, col)
+            y   = row_centre - img.get_height() // 2
 
             if alpha < 255:
                 img.set_alpha(alpha)
-
             surface.blit(img, (MENU_X, y))
 
-            # Generous hit rect spanning the full row height
+            # ── 3. Sliding › indicator (enters from the left) ─────────────
+            if t > 0.02:
+                ind_font = get_font_secondary(size, bold=bold)
+                ind_surf = ind_font.render(INDICATOR, True, COL_HOVERED)
+                ind_w    = ind_surf.get_width()
+                # Slides from off-screen-left into position as t→1
+                ind_target_x = MENU_X - ind_w - INDICATOR_GAP
+                ind_x = int(ind_target_x * t + (ind_target_x - 60) * (1.0 - t))
+                ind_surf.set_alpha(int(alpha * t))
+                ind_y = row_centre - ind_surf.get_height() // 2
+                surface.blit(ind_surf, (ind_x, ind_y))
+
+            
+
+            # ── 4. Hit rect (generous, full row height) ───────────────────
             self.item_rects[i] = pygame.Rect(
                 MENU_X, row_top,
                 img.get_width() + 20, ROW_H
             )
 
     def _draw_credits_content(self, surface, alpha):
-        # Draw a container for credits
         container_w, container_h = 700, 500
         container_x = (SCREEN_W - container_w) // 2
         container_y = (SCREEN_H - container_h) // 2
@@ -208,11 +242,9 @@ class MenuState(BaseState):
         pygame.draw.rect(surface, NEAR_BLACK, container_rect, border_radius=20)
         pygame.draw.rect(surface, (100, 100, 100), container_rect, 2, border_radius=20)
 
-        # Title
         from utils import draw_text
         draw_text(surface, "CREDITS", 60, (200, 200, 200), container_x + container_w // 2, container_y + 50)
 
-        # Credits text
         credits_lines = [
             "Game Development: BitByBit Team",
             "Art and Design: Creative Minds",
