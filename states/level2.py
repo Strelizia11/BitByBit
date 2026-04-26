@@ -15,7 +15,7 @@ from utils import (
 audio = AudioManager()
 # ── Layout constants ───────────────────────────────────────────────────────────
 HUD_H = 52
-BULB_SIZE = (80, 120)
+BULB_SIZE = (50, 80)
 BULB_CENTER = (CX, CY + 30)
 
 # ── HUD colours ───────────────────────────────────────────────────────────────
@@ -25,10 +25,18 @@ ANOMALY_COL = (220, 220, 220)
 FOLLOW_COL = GREEN_BRIGHT
 IGNORE_COL = BLOOD_RED
 
-# Window position — left of switch, vertically centred
-WIN_W, WIN_H = 110, 150
-WIN_X = CX - 160 - WIN_W
-WIN_Y = CY - WIN_H // 2 + 30
+# ── Window & Door layout (centred on the switch) ─────────────────────────────
+WIN_W,  WIN_H  = 250, 300         # window image size
+DOOR_W, DOOR_H = 300, 500        # door image size
+
+# Switch is at BULB_CENTER = (CX, CY+30)
+# Window sits to the LEFT of the switch
+WIN_X = CX - 180 - WIN_W         # 180 px gap between switch and window
+WIN_Y = CY + 30 - WIN_H // 2     # vertically centred on switch
+
+# Door sits to the RIGHT of the switch
+DOOR_X = CX + 180                # 180 px gap between switch and door
+DOOR_Y = CY + 30 - DOOR_H // 2 +30 # vertically centred on switch
 
 
 class Level2State(BaseState):
@@ -43,7 +51,9 @@ class Level2State(BaseState):
     def on_enter(self, **kwargs):
         audio.stop_music()
         audio.play_music("ambience", loop=True)
-        # --- images ---
+
+
+        # --- light switch images ---
         self.img_on = pygame.transform.scale(
             pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
             BULB_SIZE
@@ -53,6 +63,48 @@ class Level2State(BaseState):
             BULB_SIZE
         )
         self.img_rect = self.img_on.get_rect(center=BULB_CENTER)
+
+        # --- background images ---
+        self.bg_lights_on = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "lvl2-background-lights-on.png")).convert(),
+            (SCREEN_W, SCREEN_H)
+        )
+        self.bg_lights_off = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "lvl2-background-lights-off.png")).convert(),
+            (SCREEN_W, SCREEN_H)
+        )
+
+        # --- window images (all 4 states) — scaled to WIN_W x WIN_H ---
+        self.img_window_close_on  = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "window-close-on.png")).convert_alpha(),
+            (WIN_W, WIN_H))
+        self.img_window_open_on   = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "window-open-on.png")).convert_alpha(),
+            (WIN_W, WIN_H))
+        self.img_window_open_off  = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "window-open-off.png")).convert_alpha(),
+            (WIN_W, WIN_H))
+        self.img_window_close_off = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "window-close-off.png")).convert_alpha(),
+            (WIN_W, WIN_H))
+
+        # --- door images (all 4 states) — scaled to DOOR_W x DOOR_H ---
+        self.img_door_close_on  = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "door-close-on.png")).convert_alpha(),
+            (DOOR_W, DOOR_H))
+        self.img_door_open_on   = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "door-open-on.png")).convert_alpha(),
+            (DOOR_W, DOOR_H))
+        self.img_door_open_off  = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "door-open-off.png")).convert_alpha(),
+            (DOOR_W, DOOR_H))
+        self.img_door_close_off = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "door-close-off.png")).convert_alpha(),
+            (DOOR_W, DOOR_H))
+
+        # Rects — window LEFT of switch, door RIGHT of switch
+        self.window_img_rect = self.img_window_close_on.get_rect(topleft=(WIN_X, WIN_Y))
+        self.door_img_rect   = self.img_door_close_on.get_rect(topleft=(DOOR_X, DOOR_Y))
 
         # --- cursor images ---
         self.cur_normal = pygame.transform.scale(
@@ -69,8 +121,13 @@ class Level2State(BaseState):
         self.light_on = False
         self.is_clicked = False
 
+        # --- door state: START WITH CLOSED ---
+        self.door_open = False
+        self.door_rect = pygame.Rect(DOOR_X, DOOR_Y, DOOR_W, DOOR_H)
+
         # --- window state: START WITH CLOSED ---
         self.window_open = False
+        # Click hitbox matches the window image position and size
         self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
 
         self.instr_sys = InstructionSystem(total_rounds=8)
@@ -104,6 +161,7 @@ class Level2State(BaseState):
 
         self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
         self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
+
     # ── Input ─────────────────────────────────────────────────────────────────
     def handle_event(self, event):
         if self.game_over:
@@ -122,27 +180,36 @@ class Level2State(BaseState):
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.is_clicked = True
-            
-            # Window click - toggle open/closed state
+
+            # Window click
             if self.window_rect.collidepoint(event.pos):
                 self.window_open = not self.window_open
                 self.window_clicks_this_round += 1
-                # Play appropriate sound
+
                 if self.window_open:
                     audio.play("window_open", channel="window")
                 else:
                     audio.play("window_close", channel="window")
-            
-            # Switch click - toggle light
+
+            # Door click (NEW)
+            elif self.door_rect.collidepoint(event.pos):
+                self.door_open = not self.door_open
+
+                # Optional sounds (add if you have them)
+                if self.door_open:
+                    audio.play("door_open", channel="door")
+                else:
+                    audio.play("door_close", channel="door")
+
+            # Switch click
             elif self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
-                # Play switch sound
+
                 if self.light_on:
                     audio.play("switch_on", channel="switch")
                 else:
                     audio.play("switch_off", channel="switch")
-
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.is_clicked = False
 
@@ -176,7 +243,7 @@ class Level2State(BaseState):
                 if self.death_timer > 2.0:
                     self.death_phase = 666
                     self.death_timer = 0.0
-                    audio.play("jumpscare1", channel="jumpscare")
+                    audio.play("intense", channel="jumpscare")
             elif self.death_phase == 666:
                 if self.death_timer > 4.0:
                     if "jumpscare" in audio.channels:
@@ -185,28 +252,45 @@ class Level2State(BaseState):
                     self.game.switch_state("menu")
 
             elif self.death_phase == 1 and self.death_timer > 3.0:
-                audio.play("jumpscare2", channel="jumpscare")
                 self.death_phase = 2
                 self.death_timer = 0.0
             elif self.death_phase == 2 and self.death_timer > 3.0:
                 self.death_phase = 3
                 self.death_timer = 0.0
             elif self.death_phase == 3 and self.death_timer > 2.0:
-                if "jumpscare" in audio.channels:
-                    audio.channels["jumpscare"].stop()
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("menu")
 
     # ── Draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface):
-        # ── Normal gameplay drawing ───────────────────────────────────────────
-        surface.fill((255, 255, 255))
+        # ── Background: swap based on light state ─────────────────────────────
+        bg = self.bg_lights_on if self.light_on else self.bg_lights_off
+        surface.blit(bg, (0, 0))
 
+        # ── Light switch bulb image ───────────────────────────────────────────
         img = self.img_on if self.light_on else self.img_off
         surface.blit(img, self.img_rect)
 
+        # ── Window: all 4 states (open/close × lights on/off) ─────────────────
+        if self.light_on and not self.window_open:
+            surface.blit(self.img_window_close_on, self.window_img_rect)
+        elif self.light_on and self.window_open:
+            surface.blit(self.img_window_open_on, self.window_img_rect)
+        elif not self.light_on and self.window_open:
+            surface.blit(self.img_window_open_off, self.window_img_rect)
+        else:  # lights off + window closed
+            surface.blit(self.img_window_close_off, self.window_img_rect)
 
-        self._draw_window(surface)
+        # ── Door: all 4 states (open/close × lights on/off) ───────────────────
+        # ── Door: all 4 states (FIXED - uses door_open now) ──
+        if self.light_on and not self.door_open:
+            surface.blit(self.img_door_close_on, self.door_img_rect)
+        elif self.light_on and self.door_open:
+            surface.blit(self.img_door_open_on, self.door_img_rect)
+        elif not self.light_on and self.door_open:
+            surface.blit(self.img_door_open_off, self.door_img_rect)
+        else:
+            surface.blit(self.img_door_close_off, self.door_img_rect)
 
         if not self.light_on:
             self._draw_flashlight(surface)
@@ -245,9 +329,15 @@ class Level2State(BaseState):
             pygame.mouse.set_visible(False)
             return
 
-        self.current_text = result[0]
-        self.current_is_anomaly = result[1]
-        self.current_base_rule = result[2]
+        # Round 1 of Level 2 is always this specific anomaly instruction
+        if self.instr_sys.current_round == 1:
+            self.current_text = "IT SAYS CLICK THE SWITCH 3 TIMES"
+            self.current_is_anomaly = True
+            self.current_base_rule = "SIMON SAYS CLICK THE SWITCH 3 TIMES"
+        else:
+            self.current_text = result[0]
+            self.current_is_anomaly = result[1]
+            self.current_base_rule = result[2]
 
         self.round_timer = 0.0
         self.clicks_this_round = 0
@@ -317,54 +407,6 @@ class Level2State(BaseState):
             bold=True,
             alpha=alpha
         )
-    def _draw_window(self, surface):
-        """
-        Draw the window frame and panes based on open/closed state.
-        Window can be clicked to open or close it.
-        """
-        wr = self.window_rect
-
-        # Window frame — always drawn
-        frame_color = (45, 45, 55)
-        border_color = (95, 95, 110)
-        
-        pygame.draw.rect(surface, frame_color, wr, border_radius=4)
-        pygame.draw.rect(surface, border_color, wr, 2, border_radius=4)
-
-        if self.window_open:
-            # Draw open window - panes pushed to the sides
-            left_pane = pygame.Rect(wr.left + 4, wr.top + 4, wr.width // 2 - 12, wr.height - 8)
-            right_pane = pygame.Rect(wr.centerx + 8, wr.top + 4, wr.width // 2 - 12, wr.height - 8)
-            
-            # Draw panes (slightly darker when open)
-            pane_color = (30, 30, 40)
-            pygame.draw.rect(surface, pane_color, left_pane, border_radius=2)
-            pygame.draw.rect(surface, pane_color, right_pane, border_radius=2)
-            pygame.draw.rect(surface, border_color, left_pane, 1, border_radius=2)
-            pygame.draw.rect(surface, border_color, right_pane, 1, border_radius=2)
-            
-            # Draw opening (the gap in the middle showing "outside")
-            opening = pygame.Rect(wr.left + wr.width // 2 - 8, wr.top + 4, 16, wr.height - 8)
-            night_color = (10, 15, 25)
-            pygame.draw.rect(surface, night_color, opening)
-            
-        else:
-            # Draw closed window - cross dividers in the middle
-            mx, my = wr.centerx, wr.centery
-            
-            # Draw glass panes (semi-transparent blue-ish tint)
-            glass_color = (40, 50, 70)
-            pane_tl = pygame.Rect(wr.left + 4, wr.top + 4, wr.width // 2 - 6, wr.height // 2 - 6)
-            pane_tr = pygame.Rect(mx + 2, wr.top + 4, wr.width // 2 - 6, wr.height // 2 - 6)
-            pane_bl = pygame.Rect(wr.left + 4, my + 2, wr.width // 2 - 6, wr.height // 2 - 6)
-            pane_br = pygame.Rect(mx + 2, my + 2, wr.width // 2 - 6, wr.height // 2 - 6)
-            
-            for pane in [pane_tl, pane_tr, pane_bl, pane_br]:
-                pygame.draw.rect(surface, glass_color, pane)
-            
-            # Cross dividers
-            pygame.draw.line(surface, border_color, (mx, wr.top + 4), (mx, wr.bottom - 4), 2)
-            pygame.draw.line(surface, border_color, (wr.left + 4, my), (wr.right - 4, my), 2)
 
     def _draw_flashlight(self, surface):
         mx, my = pygame.mouse.get_pos()
