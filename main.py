@@ -4,7 +4,7 @@ import os
 
 
 FPS   = 60
-TITLE = "Patrick Says HAHAHAHA"
+TITLE = "Flicker"
 
 
 class Game:

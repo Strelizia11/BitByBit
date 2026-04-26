@@ -176,7 +176,7 @@ class Level2State(BaseState):
                 if self.death_timer > 2.0:
                     self.death_phase = 666
                     self.death_timer = 0.0
-                    audio.play("intense", channel="jumpscare")
+                    audio.play("jumpscare1", channel="jumpscare")
             elif self.death_phase == 666:
                 if self.death_timer > 4.0:
                     if "jumpscare" in audio.channels:
@@ -185,12 +185,15 @@ class Level2State(BaseState):
                     self.game.switch_state("menu")
 
             elif self.death_phase == 1 and self.death_timer > 3.0:
+                audio.play("jumpscare2", channel="jumpscare")
                 self.death_phase = 2
                 self.death_timer = 0.0
             elif self.death_phase == 2 and self.death_timer > 3.0:
                 self.death_phase = 3
                 self.death_timer = 0.0
             elif self.death_phase == 3 and self.death_timer > 2.0:
+                if "jumpscare" in audio.channels:
+                    audio.channels["jumpscare"].stop()
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("menu")
 
