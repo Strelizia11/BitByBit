@@ -116,12 +116,28 @@ class GameState(BaseState):
         self.jumpscare = pygame.image.load(os.path.join("assets", "jumpscare.jpg")).convert()
         self.jumpscare = pygame.transform.scale(self.jumpscare, (SCREEN_W, SCREEN_H))
 
-        # --- cobweb obstacle (modified) ---
-        self.cobweb_visible = True
+        # --- cobweb obstacle ---
+        # Load all three damage state images, each scaled to fill the screen
+        self.cobweb_imgs = [
+            pygame.transform.scale(
+                pygame.image.load(os.path.join("assets", "cobweb1-damage0.png")).convert_alpha(),
+                (SCREEN_W, SCREEN_H)
+            ),
+            pygame.transform.scale(
+                pygame.image.load(os.path.join("assets", "cobweb1-damage1.png")).convert_alpha(),
+                (SCREEN_W, SCREEN_H)
+            ),
+            pygame.transform.scale(
+                pygame.image.load(os.path.join("assets", "cobweb1-damage2.png")).convert_alpha(),
+                (SCREEN_W, SCREEN_H)
+            ),
+        ]
+        # Clickable hitbox anchored to the top-right corner
+        self.cobweb_rect = pygame.Rect(0, 0, SCREEN_W, SCREEN_H)
+        self.cobweb_visible = False   # only appears when light is off
         self.cobweb_timer = 0.0
         self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-        self.cobweb_clicks = 0  # New tracking for 3-click health[cite: 1]
-        self._randomize_cobweb_pos()  # Initialize random start position[cite: 1]
+        self.cobweb_clicks = 0        # 0 = damage0, 1 = damage1, 2 = damage2, 3 = gone
 
         # --- level transition cutscene ---
         self.trans_phase = TRANS_IDLE
@@ -131,16 +147,6 @@ class GameState(BaseState):
         self.hand_y_offscreen = SCREEN_H + 20
         self.hand_y = float(self.hand_y_offscreen)
         self.hand_target_y = float(BULB_CENTER[1] - 10)
-
-    def _randomize_cobweb_pos(self):
-        """Generates a new position for the cobweb within a radius of the switch[cite: 1]"""
-        offset_x = random.randint(-60, 60)  # Random horizontal offset[cite: 1]
-        offset_y = random.randint(-40, 40)  # Random vertical offset[cite: 1]
-        self.cobweb_rect = pygame.Rect(
-            BULB_CENTER[0] - 45 + offset_x,
-            BULB_CENTER[1] - 35 + offset_y,
-            90, 90
-        )
 
     # ── Input ─────────────────────────────────────────────────────────────────
     def handle_event(self, event):
@@ -162,16 +168,17 @@ class GameState(BaseState):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.is_clicked = True
 
-            # Modified: Check if cobweb is clicked and handle 3-click logic[cite: 1]
+            # Cobweb is only clickable when visible (i.e. light is off)
             if self.cobweb_visible and self.cobweb_rect.collidepoint(event.pos):
                 self.cobweb_clicks += 1
-                if self.cobweb_clicks >= 3:  # Requires 3 clicks to disappear[cite: 1]
+                if self.cobweb_clicks >= 3:   # third click clears the cobweb
                     self.cobweb_visible = False
                     self.cobweb_timer = 0.0
                     self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-                    self.cobweb_clicks = 0  # Reset health for next respawn[cite: 1]
+                    self.cobweb_clicks = 0    # reset for next spawn
+                # clicks 1 and 2 just advance the damage sprite (handled in draw)
 
-            # Only allow switch click if cobweb is removed[cite: 1]
+            # Allow switch click only when cobweb is not blocking
             elif not self.cobweb_visible and self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
@@ -200,14 +207,21 @@ class GameState(BaseState):
             self.instr_alpha = min(1.0, self.instr_alpha + dt * 2.5)
             self.instr_pulse += dt
 
-            # ── Cobweb respawn timer ────────────────────────────────
-            if not self.cobweb_visible:
-                self.cobweb_timer += dt
-                if self.cobweb_timer >= self.cobweb_respawn_at:
-                    self.cobweb_visible = True
-                    self.cobweb_timer = 0.0
-                    self.cobweb_respawn_at = random.uniform(5.0, 6.0)
-                    self._randomize_cobweb_pos()  #
+            # ── Cobweb: only active when light is off ───────────────
+            if not self.light_on:
+                if not self.cobweb_visible:
+                    self.cobweb_timer += dt
+                    if self.cobweb_timer >= self.cobweb_respawn_at:
+                        self.cobweb_visible = True
+                        self.cobweb_timer = 0.0
+                        self.cobweb_respawn_at = random.uniform(5.0, 6.0)
+                        self.cobweb_clicks = 0
+            else:
+                # Light turned on — hide any active cobweb and reset timer
+                if self.cobweb_visible:
+                    self.cobweb_visible = False
+                    self.cobweb_clicks = 0
+                self.cobweb_timer = 0.0
 
             time_left = max(0.0, self.round_time_limit - self.round_timer)
             if time_left < 3.0:
@@ -297,9 +311,9 @@ class GameState(BaseState):
             img = self.img_on if self.light_on else self.img_off
             surface.blit(img, self.img_rect)
 
-            if self.cobweb_visible:
+            # Cobweb renders only when light is off and cobweb is active
+            if not self.light_on and self.cobweb_visible:
                 self._draw_cobweb(surface)
-
 
             if not self.light_on:
                 self._draw_flashlight(surface)
@@ -395,10 +409,10 @@ class GameState(BaseState):
 
         alpha = int(self.instr_alpha * 255)
         # ── TEXTBOX SETTINGS ─────────────────────────
-        box_width = 700  # 🔥 reduce width here
+        box_width = 700
         box_height = 80
         box_x = CX - box_width // 2
-        box_y = HUD_H + 40  # 🔥 move downward here
+        box_y = HUD_H + 40
 
         # ── COLOR CHANGE BASED ON LIGHT ──────────────
         if self.light_on:
@@ -430,20 +444,10 @@ class GameState(BaseState):
             alpha=alpha
         )
 
-
     def _draw_cobweb(self, surface):
-        cx, cy = self.cobweb_rect.center
-        for angle in range(0, 360, 30):
-            rad = math.radians(angle)
-            x1 = cx + math.cos(rad) * 3
-            y1 = cy + math.sin(rad) * 3
-            x2 = cx + math.cos(rad) * 45
-            y2 = cy + math.sin(rad) * 45
-            pygame.draw.line(surface, (200, 200, 210), (x1, y1), (x2, y2), 1)
-        for r in [15, 30, 45]:
-            pygame.draw.circle(surface, (200, 200, 210), (cx, cy), r, 1)
-        pygame.draw.circle(surface, (40, 40, 40), (cx, cy), 8)
-        pygame.draw.circle(surface, (60, 60, 60), (cx, cy), 6)
+        # Pick the correct damage-state image (0, 1, or 2 clicks taken)
+        img_index = min(self.cobweb_clicks, 2)
+        surface.blit(self.cobweb_imgs[img_index], (0, 0))
 
     def _draw_flashlight(self, surface):
         mx, my = pygame.mouse.get_pos()
