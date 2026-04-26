@@ -3,6 +3,7 @@ import math
 import pygame
 import random
 from states.base import BaseState
+from states.audio_manager import AudioManager
 from system.instruction_system import InstructionSystem
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
@@ -11,6 +12,7 @@ from utils import (
     SCREEN_W, SCREEN_H, CX, CY, get_font, lerp_color
 )
 
+audio = AudioManager()
 # ── Layout constants ───────────────────────────────────────────────────────────
 HUD_H = 52
 BULB_SIZE = (80, 120)
@@ -39,6 +41,8 @@ class Level2State(BaseState):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
+        audio.stop_music()
+        audio.play_music("ambience", loop=True)
         # --- images ---
         self.img_on = pygame.transform.scale(
             pygame.image.load(os.path.join("assets", "light-on1.png")).convert_alpha(),
@@ -103,9 +107,13 @@ class Level2State(BaseState):
         if self.game_over:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
+                    audio.stop_music()
+                    audio.play("button_click", channel="button")
                     self.game.score = 0
                     self.on_enter()
                 elif event.key == pygame.K_ESCAPE:
+                    audio.stop_music()
+                    audio.play("button_click", channel="button")
                     pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
             return
@@ -119,9 +127,9 @@ class Level2State(BaseState):
                 self.window_clicks_this_round += 1
                 # Play appropriate sound
                 if self.window_open:
-                    self.game.audio.play("window_open", channel="window")
+                    audio.play("window_open", channel="window")
                 else:
-                    self.game.audio.play("window_close", channel="window")
+                    audio.play("window_close", channel="window")
             
             # Switch click - toggle light
             elif self.img_rect.collidepoint(event.pos):
@@ -129,15 +137,16 @@ class Level2State(BaseState):
                 self.clicks_this_round += 1
                 # Play switch sound
                 if self.light_on:
-                    self.game.audio.play("switch_on", channel="switch")
+                    audio.play("switch_on", channel="switch")
                 else:
-                    self.game.audio.play("switch_off", channel="switch")
+                    audio.play("switch_off", channel="switch")
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.is_clicked = False
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                audio.stop_music()
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("menu")
 
@@ -158,6 +167,7 @@ class Level2State(BaseState):
             if self.round_timer >= self.round_time_limit:
                 self._resolve_round()
         else:
+            audio.stop_music()
             self.death_timer += dt
 
             if self.death_phase == 4:

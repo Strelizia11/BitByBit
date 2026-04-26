@@ -1,12 +1,13 @@
 import pygame
 from states.base import BaseState
+from states.audio_manager import AudioManager
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
     NEAR_BLACK, DARK_GRAY, MID_GRAY, DIM_WHITE, WHITE,
     BLOOD_RED, AMBER, AMBER_DIM, BLACK,
     SCREEN_W, SCREEN_H, CX, CY, get_font
 )
-
+audio = AudioManager()
 DISCLAIMER_LINES = [
     "This game is designed to unsettle you.",
     "",
@@ -51,6 +52,7 @@ class DisclaimerState(BaseState):
                 self.char_idx = float(self.total_chars)
                 self.done = True
             elif self.hovered:
+                audio.play("button_click", channel="button")
                 self.game.switch_state("mechanics")
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -58,8 +60,10 @@ class DisclaimerState(BaseState):
                     self.char_idx = float(self.total_chars)
                     self.done = True
                 else:
+                    audio.play("button_click", channel="button")
                     self.game.switch_state("mechanics")
             if event.key == pygame.K_ESCAPE:
+                audio.play("button_click", channel="button")
                 self.game.switch_state("menu")
 
     def update(self, dt):

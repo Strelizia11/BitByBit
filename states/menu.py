@@ -1,10 +1,11 @@
 import pygame
 from PIL import Image
+from states.audio_manager import AudioManager
 from states.base import BaseState
 from utils import (
     NEAR_BLACK, SCREEN_W, SCREEN_H, get_font_secondary
 )
-
+audio = AudioManager()
 # ── Typography ────────────────────────────────────────────────────────────────
 SIZE_NORMAL  = 100                   # non-hovered font size (slightly smaller for contrast)
 SIZE_HOVERED = 180                   # hovered font size (bold, large)
@@ -36,6 +37,7 @@ class MenuState(BaseState):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
+        audio.play("switch_on", channel="switch")
         self.time    = 0.0
         self.fade_in = 0.0
         self.hovered = -1
@@ -52,6 +54,7 @@ class MenuState(BaseState):
         self.current_frame   = 0
         self.frame_timer     = 0.0
         self._load_gif("assets/GameMenu.gif")
+        audio.play_music("menu", loop=True)
 
         # Scanlines (pre-built once)
         self._scanlines = self._build_scanlines(SCREEN_W, SCREEN_H)
@@ -100,6 +103,7 @@ class MenuState(BaseState):
         if self.credits_mode:
             if event.type in (pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
                 self.credits_mode = False
+                audio.play("button_click", channel="button")
             return  # Block menu interaction when in credits mode
 
         if event.type == pygame.MOUSEMOTION:
@@ -116,16 +120,21 @@ class MenuState(BaseState):
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
+                audio.stop_music()
                 self.game.switch_state("disclaimer")
             elif event.key == pygame.K_ESCAPE:
+                audio.play("button_click", channel="button")
                 self.game.running = False
 
     def _activate(self, target):
         if target == "quit":
+            audio.play("button_click", channel="button")
             self.game.running = False
         elif target == "credits":
+            audio.play("button_click", channel="button")
             self.credits_mode = True
         elif target:
+            audio.play("button_click", channel="button")
             self.game.switch_state(target)
 
     def _sync_cursor(self):

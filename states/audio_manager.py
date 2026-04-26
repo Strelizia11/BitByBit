@@ -17,7 +17,9 @@ class AudioManager:
             "window": pygame.mixer.Channel(1),
             "door": pygame.mixer.Channel(2),
             "button": pygame.mixer.Channel(3),
-            "whisper": pygame.mixer.Channel(4)
+            "whisper": pygame.mixer.Channel(4),
+            "jumpscare": pygame.mixer.Channel(5)
+
         }
 
         pygame.mixer.set_num_channels(8)
@@ -44,12 +46,15 @@ class AudioManager:
         self.load_sound("whisper3", "assets/whisper3.wav")
         self.load_sound("jumpscare1", "assets/jumpscare1.wav")
         self.load_sound("jumpscare2", "assets/jumpscare2.wav")
+        self.load_sound("breathing", "assets/breathing.wav")
+        self.load_sound("ending", "assets/ending.wav")
 
     # ─────────────────────────────
     # AUTO LOAD MUSIC
     # ─────────────────────────────
     def _load_all_music(self):
         self.load_music("ambience", "assets/ambience.wav")
+        self.load_music("menu","assets/flicker.wav")
 
     # ─────────────────────────────
     # LOAD SFX

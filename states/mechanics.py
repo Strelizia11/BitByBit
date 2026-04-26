@@ -1,12 +1,13 @@
 import pygame
 from states.base import BaseState
+from states.audio_manager import AudioManager
 from utils import (
     draw_text, draw_rect_border, draw_rect_filled,
     NEAR_BLACK, DARK_GRAY, MID_GRAY, DIM_WHITE, WHITE,
     BLOOD_RED, AMBER, AMBER_DIM, BLACK, STEEL_BLUE, GREEN_DIM, GREEN_BRIGHT,
     SCREEN_W, SCREEN_H, CX, CY, get_font
 )
-
+audio = AudioManager()
 MECHANICS = [
     {
         "title":  "LIGHT ON",
@@ -57,16 +58,21 @@ class MechanicsState(BaseState):
             self.hovered = self.btn_rect.collidepoint(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.all_shown and self.hovered:
+                audio.play("button_click", channel="button")
                 self.game.switch_state("game")
             elif not self.all_shown:
+                audio.play("button_click", channel="button")
                 self._advance()
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 if self.all_shown:
+                    audio.play("button_click", channel="button")
                     self.game.switch_state("game")
                 else:
+                    audio.play("button_click", channel="button")
                     self._advance()
             if event.key == pygame.K_ESCAPE:
+                audio.play("button_click", channel="button")
                 self.game.switch_state("disclaimer")
 
     def _advance(self):
