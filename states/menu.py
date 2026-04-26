@@ -242,30 +242,73 @@ class MenuState(BaseState):
             )
 
     def _draw_credits_content(self, surface, alpha):
-        container_w, container_h = 700, 500
-        container_x = (SCREEN_W - container_w) // 2
-        container_y = (SCREEN_H - container_h) // 2
-        container_rect = pygame.Rect(container_x, container_y, container_w, container_h)
-
-        pygame.draw.rect(surface, NEAR_BLACK, container_rect, border_radius=20)
-        pygame.draw.rect(surface, (100, 100, 100), container_rect, 2, border_radius=20)
+        # ── Dark overlay (vignette effect) ────────────────────────────────
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))  # Heavy darkening
+        surface.blit(overlay, (0, 0))
 
         from utils import draw_text
-        draw_text(surface, "CREDITS", 60, (200, 200, 200), container_x + container_w // 2, container_y + 50)
 
-        credits_lines = [
-            "Game Development: BitByBit Team",
-            "Art and Design: Creative Minds",
-            "Music and Sound: Audio Wizards",
-            "Special Thanks: Open Source Community",
-            "",
-            "Click or press any key to return to menu"
+        # ── Title with blood-red glow effect ──────────────────────────────
+        title_y = int(SCREEN_H * 0.15)
+        
+        # Glow layers (expanding red halos)
+        for offset in [6, 4, 2]:
+            glow_col = (80, 0, 0, 100 - offset * 15)
+            temp_surf = pygame.Surface((SCREEN_W, 100), pygame.SRCALPHA)
+            draw_text(temp_surf, "CREDITS", 72, glow_col, SCREEN_W // 2, 50, bold=True)
+            surface.blit(temp_surf, (0, title_y - 50 + offset))
+        
+        # Main title
+        draw_text(surface, "CREDITS", 72, COL_HOVERED, SCREEN_W // 2, title_y, bold=True)
+
+        # ── Decorative divider line ───────────────────────────────────────
+        divider_y = title_y + 60
+        divider_w = 400
+        divider_x = (SCREEN_W - divider_w) // 2
+        pygame.draw.line(surface, (100, 20, 20), 
+                        (divider_x, divider_y), 
+                        (divider_x + divider_w, divider_y), 2)
+
+        # ── Credits sections with headers and values ──────────────────────
+        sections = [
+            ("GAME DEVELOPMENT", "BitByBit Team"),
+            ("ART & DESIGN", "Creative Minds"),
+            ("MUSIC & SOUND", "Audio Wizards"),
+            ("SPECIAL THANKS", "Open Source Community"),
         ]
 
-        y_offset = container_y + 120
-        for line in credits_lines:
-            draw_text(surface, line, 28, (180, 180, 180), container_x + container_w // 2, y_offset)
-            y_offset += 40
+        y_offset = divider_y + 60
+        section_spacing = 70
+
+        for header, value in sections:
+            # Section header (dim red, small caps feel)
+            draw_text(surface, header, 20, (140, 60, 60), SCREEN_W // 2, y_offset, bold=True)
+            
+            # Section value (brighter, larger)
+            draw_text(surface, value, 32, (200, 200, 200), SCREEN_W // 2, y_offset + 28)
+            
+            y_offset += section_spacing
+
+        # ── Bottom instruction with pulsing effect ────────────────────────
+        pulse = 0.5 + 0.5 * abs((self.time * 2.0) % 2.0 - 1.0)  # Triangle wave
+        instruction_alpha = int(150 + 105 * pulse)
+        instruction_col = (180, 180, 180)
+        
+        instruction_y = int(SCREEN_H * 0.88)
+        
+        # Subtle shadow for readability
+        draw_text(surface, "[ CLICK OR PRESS ANY KEY TO RETURN ]", 
+                 18, (20, 20, 20), SCREEN_W // 2 + 1, instruction_y + 1)
+        
+        temp_surf = pygame.Surface((SCREEN_W, 40), pygame.SRCALPHA)
+        draw_text(temp_surf, "[ CLICK OR PRESS ANY KEY TO RETURN ]", 
+                 18, instruction_col, SCREEN_W // 2, 20)
+        temp_surf.set_alpha(instruction_alpha)
+        surface.blit(temp_surf, (0, instruction_y - 20))
+
+        # ── Scanline overlay for consistency ──────────────────────────────
+        surface.blit(self._scanlines, (0, 0))
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
