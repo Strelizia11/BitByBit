@@ -28,7 +28,7 @@ IGNORE_COL = BLOOD_RED
 
 # ── Window & Door layout (centred on the switch) ─────────────────────────────
 WIN_W,  WIN_H  = 250, 300         # window image size
-DOOR_W, DOOR_H = 300, 500        # door image size
+DOOR_W, DOOR_H = 300, 600        # door image size
 
 # Switch is at BULB_CENTER = (CX, CY+30)
 # Window sits to the LEFT of the switch
@@ -37,7 +37,7 @@ WIN_Y = CY + 30 - WIN_H // 2     # vertically centred on switch
 
 # Door sits to the RIGHT of the switch
 DOOR_X = CX + 180                # 180 px gap between switch and door
-DOOR_Y = CY + 30 - DOOR_H // 2 +30 # vertically centred on switch
+DOOR_Y = CY + 30 - DOOR_H // 2 + 20 # vertically centred on switch
 
 
 class Level2State(BaseState):

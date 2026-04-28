@@ -272,23 +272,39 @@ class MenuState(BaseState):
 
         # ── Credits sections with headers and values ──────────────────────
         sections = [
-            ("GAME DEVELOPMENT", "BitByBit Team"),
-            ("ART & DESIGN", "Creative Minds"),
-            ("MUSIC & SOUND", "Audio Wizards"),
-            ("SPECIAL THANKS", "Open Source Community"),
+            ("GAME DEVELOPMENT", ["BitByBit Team"]),
+            ("ART & DESIGN",     ["BitByBit Team"]),
+            ("MUSIC & SOUND", [
+                "dragon studio - light switch",
+                "dragon studio - light switch on",
+                "dragon studio - open door stock sfx",
+                "freesound_community - door close",
+                "freesound_community - shutters closing 2",
+                "freesound_community - shutters opening 1",
+                "freesound_community - whispers schizophrenic",
+                "freesound_community - fuzzy jumpscare",
+                "freesound123 - jumpscare v3",
+                "alex_jauk - spooky ambience sound",
+                "universfield - computer mouse click",
+            ]),
         ]
 
-        y_offset = divider_y + 60
-        section_spacing = 70
+        VALUE_SIZE   = 18   # font size for credit lines
+        LINE_SPACING = 20   # px between each credit line
+        HEADER_GAP   = 24   # gap from header to first value line
+        SECTION_GAP  = 28   # extra breathing room before next header
 
-        for header, value in sections:
-            # Section header (dim red, small caps feel)
+        y_offset = divider_y + 40
+
+        for header, lines in sections:
             draw_text(surface, header, 20, (140, 60, 60), SCREEN_W // 2, y_offset, bold=True)
-            
-            # Section value (brighter, larger)
-            draw_text(surface, value, 32, (200, 200, 200), SCREEN_W // 2, y_offset + 28)
-            
-            y_offset += section_spacing
+            y_offset += HEADER_GAP
+
+            for line in lines:
+                draw_text(surface, line, VALUE_SIZE, (200, 200, 200), SCREEN_W // 2, y_offset)
+                y_offset += LINE_SPACING
+
+            y_offset += SECTION_GAP
 
         # ── Bottom instruction with pulsing effect ────────────────────────
         pulse = 0.5 + 0.5 * abs((self.time * 2.0) % 2.0 - 1.0)  # Triangle wave
