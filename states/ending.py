@@ -87,14 +87,13 @@ class EndingState(BaseState):
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣞⣿⣿⣿⡜⣶⣿⣿⡷⣙⡾⣷⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 """
 
-        message = "SIMON IS WATCHING YOU\n" + ascii_art
+        message = "!!!!!!!!!!!!!!!!!!!!!!!! SIMON IS WATCHING YOU !!!!!!!!!!!!!!!!!!!!!!!!\n" + ascii_art
 
         import ctypes
         hwnd_pygame = pygame.display.get_wm_info()["window"]
 
         script_lines = [
             "import sys, time, ctypes, os",
-            "os.system('chcp 65001 > nul')",
             "hwnd = ctypes.windll.kernel32.GetConsoleWindow()",
             "ctypes.windll.user32.ShowWindow(hwnd, 3)",
             "ctypes.windll.user32.SetForegroundWindow(hwnd)",
@@ -123,7 +122,7 @@ class EndingState(BaseState):
             with open(tmp, "w", encoding="utf-8") as f:  # ← utf-8 required for braille chars
                 f.write("\n".join(script_lines))
             subprocess.Popen(
-                f'start cmd /c "chcp 65001 & python \"{tmp}\""',
+                f'start cmd /c "python \"{tmp}\""',
                 shell=True
             )
         except Exception as e:
