@@ -33,6 +33,7 @@ class Game:
         from states.game import GameState
         from states.splash import SplashState
         from states.level2 import Level2State
+        from states.ending import EndingState
 
         self.states = {
             "splash":     SplashState(self),
@@ -41,6 +42,7 @@ class Game:
             "mechanics":  MechanicsState(self),
             "game":       GameState(self),
             "level2":     Level2State(self),
+            "ending":     EndingState(self),
         }
 
     def switch_state(self, name, **kwargs):
