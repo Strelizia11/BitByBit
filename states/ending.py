@@ -34,7 +34,6 @@ class EndingState(BaseState):
     def on_enter(self, **kwargs):
         pygame.mouse.set_visible(False)
         audio.play("ending", channel="ending", duration=6.5, fadeout=0.5)
-        # removed _spawn_terminal_message() from here
         self.time = 0.0
         self.phase_time = 0.0
 
@@ -50,9 +49,9 @@ class EndingState(BaseState):
         self.allow_exit = False
 
         # ── CMD spawn tracking ───────────────────────────────────
-        self.cmd_spawned = False  # has the cmd window been launched yet?
-        self.cmd_timer = 0.0  # counts up once cmd is spawned
-        self.CMD_DURATION = 5.0  # seconds before returning to game
+        self.cmd_spawned = False
+        self.cmd_timer = 0.0
+        self.CMD_DURATION = 5.0
 
         self._vignette = self._build_vignette()
         self._scanlines = self._build_scanlines()
@@ -60,40 +59,76 @@ class EndingState(BaseState):
 
     def _spawn_terminal_message(self):
         """Opens a maximized cmd window, then returns focus to pygame (Windows only)."""
-        message = "SIMON IS WATCHING OVER YOU"
+
+        ascii_art = r"""
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣶⣿⣿⣿⣿⣯⣿⣷⣦⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢼⣿⣿⣿⠿⡿⣿⣿⣿⣿⣿⣿⣿⣿⢿⡿⣿⣿⠿⢣⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠾⠋⠀⢀⣠⠀⠀⠙⠛⣿⣿⡿⠋⠁⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠆⠀⠀⢀⣿⣿⠄⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣶⣤⣤⣤⣦⣶⠀⢠⣿⣿⣧⣶⣤⣄⣤⣤⣴⣶⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⠆⠐⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⡿⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢈⣿⣿⣿⡿⠁⠀⠀⠈⠟⠛⣳⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⡿⠿⠁⠀⠀⠀⠀⣀⣴⣿⣿⣿⢿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⠿⠿⠿⠟⠛⠉⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠐⠈⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⢠⠰⣭⡷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⡭⢀⢹⡞⡵⠁⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢈⣿⣿⣿⡇⣌⣾⣿⡃⡐⢴⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣞⣿⣿⣿⡜⣶⣿⣿⡷⣙⡾⣷⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+"""
+
+        message = "SIMON IS WATCHING YOU\n" + ascii_art
 
         import ctypes
-        hwnd_pygame = pygame.display.get_wm_info()["window"]  # grab pygame's HWND now
+        hwnd_pygame = pygame.display.get_wm_info()["window"]
 
         script_lines = [
-            "import sys, time, ctypes",
+            "import sys, time, ctypes, os",
+            "os.system('chcp 65001 > nul')",
             "hwnd = ctypes.windll.kernel32.GetConsoleWindow()",
             "ctypes.windll.user32.ShowWindow(hwnd, 3)",
             "ctypes.windll.user32.SetForegroundWindow(hwnd)",
             "ctypes.windll.user32.BringWindowToTop(hwnd)",
             f"msg = {repr(message)}",
-            "for ch in msg:",
+            "lines = msg.split('\\n')",
+            "first_line = lines[0]",
+            "for ch in first_line:",
             "    sys.stdout.write(ch)",
             "    sys.stdout.flush()",
             "    time.sleep(0.10)",
+            "sys.stdout.write('\\n')",
+            "sys.stdout.write('\\n'.join(lines[1:]))",
+            "sys.stdout.flush()",
             "time.sleep(4)",
-            # ── return focus to pygame ──
+            "time.sleep(0.3)",
             f"hwnd_game = {hwnd_pygame}",
-            "ctypes.windll.user32.ShowWindow(hwnd_game, 9)",  # SW_RESTORE
+            "ctypes.windll.user32.ShowWindow(hwnd_game, 3)",
             "ctypes.windll.user32.SetForegroundWindow(hwnd_game)",
             "ctypes.windll.user32.BringWindowToTop(hwnd_game)",
+            "ctypes.windll.user32.SetFocus(hwnd_game)",
         ]
 
         try:
             tmp = os.path.join(os.environ.get("TEMP", "."), "_simon_msg.py")
-            with open(tmp, "w") as f:
+            with open(tmp, "w", encoding="utf-8") as f:  # ← utf-8 required for braille chars
                 f.write("\n".join(script_lines))
             subprocess.Popen(
-                f'start cmd /c python "{tmp}"',
+                f'start cmd /k "chcp 65001 & python \"{tmp}\""',
                 shell=True
             )
         except Exception as e:
             print(f"[EndingState] Terminal spawn failed: {e}")
+
     # ── Distortion ───────────────────────────────────────────
     def distort_text(self, text, intensity):
         replacements = {
@@ -141,6 +176,9 @@ class EndingState(BaseState):
                     self._trigger_exit_block()
                 else:
                     self.game.switch_state("menu")
+                    pygame.mouse.set_visible(True)
+                    pygame.event.set_grab(False)
+
 
     # ── Update ───────────────────────────────────────────────
     def update(self, dt):
@@ -173,16 +211,18 @@ class EndingState(BaseState):
             self.intensity = 1.0
             self.current_text = self.distort_text(self.alt_text, 0.9)
 
-            # ── Spawn cmd once we're deep into the final phase ──
             if not self.cmd_spawned:
                 self._spawn_terminal_message()
                 self.cmd_spawned = True
 
-        # ── Count down after cmd spawned, then return to menu ───
         if self.cmd_spawned:
             self.cmd_timer += dt
             if self.cmd_timer >= self.CMD_DURATION:
+                pygame.event.set_grab(False)
+                pygame.mouse.set_visible(False)  # or True if menu needs it
+                pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN)  # re-assert fullscreen
                 self.game.switch_state("menu")
+
 
     # ── Draw ─────────────────────────────────────────────────
     def draw(self, surface):
@@ -193,11 +233,9 @@ class EndingState(BaseState):
         base_surface.blit(self._vignette, (0, 0))
         base_surface.blit(self._scanlines, (0, 0))
 
-        # jitter
         jitter_x = int(random.randint(-6, 6) * self.intensity)
         jitter_y = int(random.randint(-3, 3) * self.intensity)
 
-        # flicker color
         flk = _flicker(self.time, 2.2)
         color = (
             int(BLOOD_RED[0] * flk),
@@ -217,7 +255,6 @@ class EndingState(BaseState):
              CY - img.get_height() // 2 + jitter_y)
         )
 
-        # ghosting
         if self.intensity > 0.4 and random.random() < 0.3:
             ghost = font.render(self.current_text, True, (120, 20, 20))
             ghost.set_alpha(80)
