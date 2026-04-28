@@ -5,39 +5,40 @@ from states.base import BaseState
 from utils import (
     NEAR_BLACK, SCREEN_W, SCREEN_H, get_font_secondary, resource_path
 )
+
 audio = AudioManager()
 # ── Typography ────────────────────────────────────────────────────────────────
-SIZE_NORMAL  = 100                   # non-hovered font size (slightly smaller for contrast)
-SIZE_HOVERED = 180                   # hovered font size (bold, large)
-COL_NORMAL   = (55, 55, 55)         # very dim — makes hover contrast dramatic
-COL_HOVERED  = (210, 30, 30)        # blood red — horror-thematic pop
+SIZE_NORMAL = 100  # non-hovered font size (slightly smaller for contrast)
+SIZE_HOVERED = 180  # hovered font size (bold, large)
+COL_NORMAL = (55, 55, 55)  # very dim — makes hover contrast dramatic
+COL_HOVERED = (210, 30, 30)  # blood red — horror-thematic pop
 
 # ── Layout ────────────────────────────────────────────────────────────────────
-MENU_X        = 130                  # left edge of all labels
-MENU_TOP_FRAC = 0.53                # top of menu block as fraction of screen height
-ROW_H         = int(SCREEN_H * 0.13)  # fixed row height / spacing (~84 px at 600p)
+MENU_X = 130  # left edge of all labels
+MENU_TOP_FRAC = 0.53  # top of menu block as fraction of screen height
+ROW_H = int(SCREEN_H * 0.13)  # fixed row height / spacing (~84 px at 600p)
 
 # ── Animation ─────────────────────────────────────────────────────────────────
-HOVER_SPEED    = 12.0               # lerp speed on hover
-SCANLINE_ALPHA = 18                 # scanline darkness
+HOVER_SPEED = 12.0  # lerp speed on hover
+SCANLINE_ALPHA = 18  # scanline darkness
 
 # ── Effects ───────────────────────────────────────────────────────────────────
-SHADOW_OFFSET  = 5                  # px offset for drop shadow
-SHADOW_COL     = (80, 0, 0)         # dark red shadow (only visible on hover)
-INDICATOR      = "›"                # sliding hover indicator character
-INDICATOR_GAP  = 10                 # gap between indicator and text
+SHADOW_OFFSET = 5  # px offset for drop shadow
+SHADOW_COL = (80, 0, 0)  # dark red shadow (only visible on hover)
+INDICATOR = "›"  # sliding hover indicator character
+INDICATOR_GAP = 10  # gap between indicator and text
 
 
 class MenuState(BaseState):
     MENU_ITEMS = [
-        ("START",    "disclaimer"),
+        ("START", "disclaimer"),
         ("CREDITS", "credits"),
-        ("LEAVE",    "quit"),
+        ("LEAVE", "quit"),
     ]
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
-        self.time    = 0.0
+        self.time = 0.0
         self.fade_in = 0.0
         self.hovered = -1
 
@@ -48,19 +49,18 @@ class MenuState(BaseState):
         self.item_rects = [pygame.Rect(0, 0, 1, 1)] * len(self.MENU_ITEMS)
 
         # GIF
-        self.gif_frames      = []
+        self.gif_frames = []
         self.frame_durations = []
-        self.current_frame   = 0
-        self.frame_timer     = 0.0
+        self.current_frame = 0
+        self.frame_timer = 0.0
         self._load_gif(resource_path("assets/GameMenu.gif"))
-
 
         # Scanlines (pre-built once)
         self._scanlines = self._build_scanlines(SCREEN_W, SCREEN_H)
 
         # Cursor
         try:
-            self._cur_hand  = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_HAND)
+            self._cur_hand = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_HAND)
             self._cur_arrow = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
         except Exception:
             self._cur_hand = self._cur_arrow = None
@@ -71,8 +71,14 @@ class MenuState(BaseState):
         # Credits mode
         self.credits_mode = False
 
-        self._music_started = False
-        self._music_delay = 7.5
+        # On the very first visit, play music immediately.
+        # On subsequent visits (returning from another state), apply the delay.
+        if not hasattr(self, '_ever_started_music') or not self._ever_started_music:
+            self._music_started = False
+            self._music_delay = 0.0  # no delay on first open
+        else:
+            self._music_started = False
+            self._music_delay = 7.5  # delay when returning mid-game
 
     def _load_gif(self, path):
         try:
@@ -124,9 +130,9 @@ class MenuState(BaseState):
             if event.key == pygame.K_RETURN:
                 audio.stop_music()
                 self.game.switch_state("disclaimer")
-            elif event.key == pygame.K_ESCAPE:
+            elif event.key in (pygame.K_ESCAPE, pygame.K_f, pygame.K_F11):
                 audio.play("button_click", channel="button")
-                self.game.running = False
+                self.game.toggle_fullscreen()
 
     def _activate(self, target):
         if target == "quit":
@@ -151,8 +157,8 @@ class MenuState(BaseState):
 
     # ── Update ────────────────────────────────────────────────────────────────
     def update(self, dt):
-        self.time    += dt
-        self.fade_in  = min(1.0, self.fade_in + dt * 1.6)
+        self.time += dt
+        self.fade_in = min(1.0, self.fade_in + dt * 1.6)
 
         k = min(HOVER_SPEED * dt, 1.0)
         for i in range(len(self.MENU_ITEMS)):
@@ -170,6 +176,7 @@ class MenuState(BaseState):
             if self._music_delay <= 0:
                 audio.play_music("menu", loop=True)
                 self._music_started = True
+                self._ever_started_music = True
 
     # ── Draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface):
@@ -202,16 +209,16 @@ class MenuState(BaseState):
             # Shrink inactive items when another is hovered
             shrink = 1.0
             if max_t > 0.25 and t < 0.1:
-                shrink = 0.82 + 0.18 * (1.0 - max_t)   # lerps 0.82→1.0 as hover fades
+                shrink = 0.82 + 0.18 * (1.0 - max_t)  # lerps 0.82→1.0 as hover fades
 
             size = int((SIZE_NORMAL + (SIZE_HOVERED - SIZE_NORMAL) * t) * shrink)
             bold = t > 0.3
-            col  = _lerp_color(COL_NORMAL, COL_HOVERED, t)
+            col = _lerp_color(COL_NORMAL, COL_HOVERED, t)
 
             font = get_font_secondary(size, bold=bold)
 
             # ── Centre text vertically in its row ─────────────────────────
-            row_top    = menu_top + i * ROW_H
+            row_top = menu_top + i * ROW_H
             row_centre = row_top + ROW_H // 2
 
             # ── 1. Shadow pass (offset, dark-red, fades in with hover) ───
@@ -223,7 +230,7 @@ class MenuState(BaseState):
 
             # ── 2. Main text ──────────────────────────────────────────────
             img = font.render(label, True, col)
-            y   = row_centre - img.get_height() // 2
+            y = row_centre - img.get_height() // 2
 
             if alpha < 255:
                 img.set_alpha(alpha)
@@ -233,15 +240,13 @@ class MenuState(BaseState):
             if t > 0.02:
                 ind_font = get_font_secondary(size, bold=bold)
                 ind_surf = ind_font.render(INDICATOR, True, COL_HOVERED)
-                ind_w    = ind_surf.get_width()
+                ind_w = ind_surf.get_width()
                 # Slides from off-screen-left into position as t→1
                 ind_target_x = MENU_X - ind_w - INDICATOR_GAP
                 ind_x = int(ind_target_x * t + (ind_target_x - 60) * (1.0 - t))
                 ind_surf.set_alpha(int(alpha * t))
                 ind_y = row_centre - ind_surf.get_height() // 2
                 surface.blit(ind_surf, (ind_x, ind_y))
-
-            
 
             # ── 4. Hit rect (generous, full row height) ───────────────────
             self.item_rects[i] = pygame.Rect(
@@ -259,14 +264,14 @@ class MenuState(BaseState):
 
         # ── Title with blood-red glow effect ──────────────────────────────
         title_y = int(SCREEN_H * 0.15)
-        
+
         # Glow layers (expanding red halos)
         for offset in [6, 4, 2]:
             glow_col = (80, 0, 0, 100 - offset * 15)
             temp_surf = pygame.Surface((SCREEN_W, 100), pygame.SRCALPHA)
             draw_text(temp_surf, "CREDITS", 72, glow_col, SCREEN_W // 2, 50, bold=True)
             surface.blit(temp_surf, (0, title_y - 50 + offset))
-        
+
         # Main title
         draw_text(surface, "CREDITS", 72, COL_HOVERED, SCREEN_W // 2, title_y, bold=True)
 
@@ -274,18 +279,18 @@ class MenuState(BaseState):
         divider_y = title_y + 60
         divider_w = 400
         divider_x = (SCREEN_W - divider_w) // 2
-        pygame.draw.line(surface, (100, 20, 20), 
-                        (divider_x, divider_y), 
-                        (divider_x + divider_w, divider_y), 2)
+        pygame.draw.line(surface, (100, 20, 20),
+                         (divider_x, divider_y),
+                         (divider_x + divider_w, divider_y), 2)
 
         # ── Credits sections with headers and values ──────────────────────
         sections = [
             ("GAME DEVELOPMENT", ["BitByBit Team"]),
-            ("ART & DESIGN",     [
+            ("ART & DESIGN", [
                 "BitByBit Team: Assets and UI",
                 "ASCII Code Art: Emoji Combos",
                 "Jumpscare video: Vlipsy"
-                ]),
+            ]),
             ("MUSIC & SOUND", [
                 "dragon studio - light switch",
                 "dragon studio - light switch on",
@@ -301,10 +306,10 @@ class MenuState(BaseState):
             ]),
         ]
 
-        VALUE_SIZE   = 18   # font size for credit lines
-        LINE_SPACING = 20   # px between each credit line
-        HEADER_GAP   = 24   # gap from header to first value line
-        SECTION_GAP  = 28   # extra breathing room before next header
+        VALUE_SIZE = 18  # font size for credit lines
+        LINE_SPACING = 20  # px between each credit line
+        HEADER_GAP = 24  # gap from header to first value line
+        SECTION_GAP = 28  # extra breathing room before next header
 
         y_offset = divider_y + 40
 
@@ -322,16 +327,16 @@ class MenuState(BaseState):
         pulse = 0.5 + 0.5 * abs((self.time * 2.0) % 2.0 - 1.0)  # Triangle wave
         instruction_alpha = int(150 + 105 * pulse)
         instruction_col = (180, 180, 180)
-        
+
         instruction_y = int(SCREEN_H * 0.88)
-        
+
         # Subtle shadow for readability
-        draw_text(surface, "[ CLICK OR PRESS ANY KEY TO RETURN ]", 
-                 18, (20, 20, 20), SCREEN_W // 2 + 1, instruction_y + 1)
-        
+        draw_text(surface, "[ CLICK OR PRESS ANY KEY TO RETURN ]",
+                  18, (20, 20, 20), SCREEN_W // 2 + 1, instruction_y + 1)
+
         temp_surf = pygame.Surface((SCREEN_W, 40), pygame.SRCALPHA)
-        draw_text(temp_surf, "[ CLICK OR PRESS ANY KEY TO RETURN ]", 
-                 18, instruction_col, SCREEN_W // 2, 20)
+        draw_text(temp_surf, "[ CLICK OR PRESS ANY KEY TO RETURN ]",
+                  18, instruction_col, SCREEN_W // 2, 20)
         temp_surf.set_alpha(instruction_alpha)
         surface.blit(temp_surf, (0, instruction_y - 20))
 
