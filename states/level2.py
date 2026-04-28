@@ -166,7 +166,7 @@ class Level2State(BaseState):
         self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
 
         self.instr_sys = InstructionSystem(total_rounds=16)
-        """self.instr_sys.reset()"""
+        self.instr_sys.reset()
 
         # --- timer & tracking ---
         self.round_time_limit = 6.0
@@ -266,6 +266,10 @@ class Level2State(BaseState):
                 self.game.switch_state("menu")
 
     def _is_wrong_interaction(self, target):
+        if self.current_base_rule == "FORCE_CLOSE_DOOR":
+            return target != "door" or not self.door_open
+        if self.current_base_rule == "FORCE_CLOSE_WINDOW":
+            return target != "window" or not self.window_open
         should_follow = (
                 (self.start_light_state and not self.current_is_anomaly) or
                 (not self.start_light_state and self.current_is_anomaly)
@@ -432,36 +436,66 @@ class Level2State(BaseState):
         # ── RANDOM ENTITY EVENT ─────────────────────────────────────
 
         if not self.light_on:
-            if not self.door_anomaly and not self.door_open and random.random() < 0.08:
+            if not self.door_anomaly and not self.door_open and random.random() < 0.20:
                 self.door_open = True
                 self.door_anomaly = True
                 audio.play("door_open", channel="door")
-
                 self.current_text = "QUICK, CLOSE THE DOORS SOMETHING IS COMING"
                 self.current_is_anomaly = False
                 self.current_base_rule = "FORCE_CLOSE_DOOR"
+                self.round_timer = 0.0
+                self.clicks_this_round = 0
+                self.window_clicks_this_round = 0
+                self.door_clicks_this_round = 0
+                self.start_light_state = self.light_on
+                self.start_window_state = self.window_open
+                self.start_door_state = self.door_open
+                self.instr_alpha = 0.0
+                self.instr_pulse = 0.0
                 return
-            # ── RANDOM LIGHT FAILURE EVENT ─────────────────────────
-        if self.light_on:
-            if random.random() < 0.08:  # 8% chance (adjust if needed)
-                self.light_on = False
-                audio.play("switch_off", channel="switch")
 
-                self.current_text = "THE LIGHTS WENT OUT..."
-                self.current_is_anomaly = False
-                self.current_base_rule = "FORCE_LIGHT_ON"
-                return
-
-            # Window anomaly
-            if not self.window_anomaly and not self.window_open and random.random() < 0.08:
+            if not self.window_anomaly and not self.window_open and random.random() < 0.20:  # ← same level as door if
                 self.window_open = True
                 self.window_anomaly = True
                 audio.play("window_open", channel="window")
-
                 self.current_text = "QUICK, CLOSE THE WINDOW SOMETHING IS COMING"
                 self.current_is_anomaly = False
                 self.current_base_rule = "FORCE_CLOSE_WINDOW"
+                self.round_timer = 0.0
+                self.clicks_this_round = 0
+                self.window_clicks_this_round = 0
+                self.door_clicks_this_round = 0
+                self.start_light_state = self.light_on
+                self.start_window_state = self.window_open
+                self.start_door_state = self.door_open
+                self.instr_alpha = 0.0
+                self.instr_pulse = 0.0
                 return
+
+            # ── RANDOM LIGHT FAILURE EVENT ─────────────────────────
+        if self.light_on:
+            if random.random() < 0.25:  # 8% chance (adjust if needed)
+                self.light_on = False
+                audio.play("switch_off", channel="switch")
+
+                self.current_text = "THE LIGHTS WENT OUT... TURN IT IN!!!"
+                self.current_is_anomaly = False
+                self.current_base_rule = "FORCE_LIGHT_ON"
+
+                self.round_timer = 0.0
+                self.clicks_this_round = 0
+                self.window_clicks_this_round = 0
+                self.door_clicks_this_round = 0
+                self.start_light_state = self.light_on
+                self.start_window_state = self.window_open
+                self.start_door_state = self.door_open
+                self.instr_alpha = 0.0
+                self.instr_pulse = 0.0
+
+                return
+
+
+
         if result is None:
             # All 8 rounds done successfully → return to menu
             self.game_over = True
