@@ -235,7 +235,7 @@ class InstructionSystem:
 
         elif base_rule == "FORCE_CLOSE_WINDOW":
             return window_clicks % 2 != 0
-        elif base_rule == "FORCE_LIGHT_ON":
-            return total_clicks % 2 != 0  # must turn light back on
+        """elif base_rule == "FORCE_LIGHT_ON":
+            return total_clicks % 2 != 0  # must turn light back on"""
 
         return False

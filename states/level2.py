@@ -76,6 +76,7 @@ class Level2State(BaseState):
         audio.play("jumpscare_sound", channel="jumpscare")
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
+        self.lights_out_notification = False
         audio.stop_music()
         audio.play_music("ambience", loop=True)
 
@@ -325,7 +326,12 @@ class Level2State(BaseState):
 
             self.round_timer += dt
             if self.round_timer >= self.round_time_limit:
-                self._resolve_round()
+                if getattr(self, "lights_out_notification", False):
+                    # Just a notification — no evaluation, just move on
+                    self.lights_out_notification = False
+                    self._load_next_instruction()
+                else:
+                    self._resolve_round()
         else:
             audio.stop_music()
             self.death_timer += dt
@@ -438,7 +444,7 @@ class Level2State(BaseState):
         # ── RANDOM ENTITY EVENT ─────────────────────────────────────
 
         if not self.light_on:
-            if not self.door_anomaly and not self.door_open and random.random() < 0.20:
+            if not self.door_anomaly and not self.door_open and random.random() < 0.50:
                 self.door_open = True
                 self.door_anomaly = True
                 audio.play("door_open", channel="door")
@@ -456,7 +462,7 @@ class Level2State(BaseState):
                 self.instr_pulse = 0.0
                 return
 
-            if not self.window_anomaly and not self.window_open and random.random() < 0.20:  # ← same level as door if
+            if not self.window_anomaly and not self.window_open and random.random() < 0.50:  # ← same level as door if
                 self.window_open = True
                 self.window_anomaly = True
                 audio.play("window_open", channel="window")
@@ -476,13 +482,14 @@ class Level2State(BaseState):
 
             # ── RANDOM LIGHT FAILURE EVENT ─────────────────────────
         if self.light_on:
-            if random.random() < 0.25:  # 8% chance (adjust if needed)
+            if random.random() < 0.40:  # chance (adjust if needed)
                 self.light_on = False
                 audio.play("switch_off", channel="switch")
 
-                self.current_text = "THE LIGHTS WENT OUT... TURN IT IN!!!"
+                self.current_text = "THE LIGHTS WENT OUT..."
                 self.current_is_anomaly = False
-                self.current_base_rule = "FORCE_LIGHT_ON"
+                """self.current_base_rule = "FORCE_LIGHT_ON"""
+                self.lights_out_notification = True
 
                 self.round_timer = 0.0
                 self.clicks_this_round = 0
