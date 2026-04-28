@@ -72,7 +72,7 @@ class MenuState(BaseState):
         self.credits_mode = False
 
         self._music_started = False
-        self._music_delay = 2.5
+        self._music_delay = 7.5
 
     def _load_gif(self, path):
         try:
