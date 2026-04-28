@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 from states.base import BaseState
+from states.audio_manager import AudioManager
 from utils import (
     draw_text,
     NEAR_BLACK, DIM_WHITE, MID_GRAY,
@@ -10,6 +11,8 @@ from utils import (
 )
 
 SCALE = SCREEN_H / 600
+
+audio = AudioManager()
 
 SZ_MAIN = max(24, int(42 * SCALE))
 SZ_SUB  = max(16, int(26 * SCALE))
@@ -25,7 +28,7 @@ class EndingState(BaseState):
 
     def on_enter(self, **kwargs):
         pygame.mouse.set_visible(False)
-        self.game.audio.play("ending", channel="ending", duration=6.5, fadeout=0.5)
+        audio.play("ending", channel="ending", duration=6.5, fadeout=0.5)
         self.time = 0.0
         self.phase_time = 0.0
 

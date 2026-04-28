@@ -204,12 +204,7 @@ class Level2State(BaseState):
     def handle_event(self, event):
         if self.game_over:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    audio.stop_music()
-                    audio.play("button_click", channel="button")
-                    self.game.score = 0
-                    self.on_enter()
-                elif event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE:
                     audio.stop_music()
                     audio.play("button_click", channel="button")
                     pygame.mouse.set_visible(True)
@@ -356,7 +351,7 @@ class Level2State(BaseState):
                 self.death_timer = 0.0
             elif self.death_phase == 3 and self.death_timer > 2.0:
                 pygame.mouse.set_visible(True)
-                self.game.switch_state("menu")
+                self.game.switch_state("ending")
         if hasattr(self, "playing_video") and self.playing_video:
             ret, frame = self.video.read()
 
@@ -444,7 +439,7 @@ class Level2State(BaseState):
         # ── RANDOM ENTITY EVENT ─────────────────────────────────────
 
         if not self.light_on:
-            if not self.door_anomaly and not self.door_open and random.random() < 0.50:
+            if not self.door_anomaly and not self.door_open and random.random() < 0.30:
                 self.door_open = True
                 self.door_anomaly = True
                 audio.play("door_open", channel="door")
@@ -462,7 +457,7 @@ class Level2State(BaseState):
                 self.instr_pulse = 0.0
                 return
 
-            if not self.window_anomaly and not self.window_open and random.random() < 0.50:  # ← same level as door if
+            if not self.window_anomaly and not self.window_open and random.random() < 0.30:  # ← same level as door if
                 self.window_open = True
                 self.window_anomaly = True
                 audio.play("window_open", channel="window")
@@ -506,11 +501,10 @@ class Level2State(BaseState):
 
 
         if result is None:
-            # All 8 rounds done successfully → return to menu
-            self.game_over = True
-            self.death_phase = 1
-            self.death_timer = 0.0
-            pygame.mouse.set_visible(False)
+            # All 16 rounds done successfully → go to ending
+            audio.stop_music()
+            pygame.mouse.set_visible(True)
+            self.game.switch_state("ending")
             return
 
         # Round 1 of Level 2 is always this specific anomaly instruction
@@ -627,7 +621,7 @@ class Level2State(BaseState):
         draw_text(surface, "ALL ROUNDS COMPLETE", 28, AMBER, CX, CY - 60, bold=True)
         draw_text(surface, f"FINAL SCORE:  {self.game.score} / {self.instr_sys.total_rounds}",
                   20, WHITE, CX, CY - 10)
-        draw_text(surface, "[R] Restart     [ESC] Menu", 14, DIM_WHITE, CX, CY + 40)
+        draw_text(surface, "[ESC] Menu", 14, DIM_WHITE, CX, CY + 40)
 
     def _apply_distress_effects(self, surface):
         if self.distress_intensity <= 0:
