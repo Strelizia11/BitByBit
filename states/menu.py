@@ -53,7 +53,7 @@ class MenuState(BaseState):
         self.current_frame   = 0
         self.frame_timer     = 0.0
         self._load_gif(resource_path("assets/GameMenu.gif"))
-        audio.play_music("menu", loop=True)
+
 
         # Scanlines (pre-built once)
         self._scanlines = self._build_scanlines(SCREEN_W, SCREEN_H)
@@ -70,6 +70,9 @@ class MenuState(BaseState):
 
         # Credits mode
         self.credits_mode = False
+
+        self._music_started = False
+        self._music_delay = 2.5
 
     def _load_gif(self, path):
         try:
@@ -162,6 +165,11 @@ class MenuState(BaseState):
             if self.frame_timer >= dur:
                 self.frame_timer -= dur
                 self.current_frame = (self.current_frame + 1) % len(self.gif_frames)
+        if not self._music_started:
+            self._music_delay -= dt
+            if self._music_delay <= 0:
+                audio.play_music("menu", loop=True)
+                self._music_started = True
 
     # ── Draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface):
