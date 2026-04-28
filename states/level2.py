@@ -442,15 +442,15 @@ class Level2State(BaseState):
                 self.current_base_rule = "FORCE_CLOSE_DOOR"
                 return
             # ── RANDOM LIGHT FAILURE EVENT ─────────────────────────
-            if self.light_on:
-                if random.random() < 0.08:  # 8% chance (adjust if needed)
-                    self.light_on = False
-                    audio.play("switch_off", channel="switch")
+        if self.light_on:
+            if random.random() < 0.08:  # 8% chance (adjust if needed)
+                self.light_on = False
+                audio.play("switch_off", channel="switch")
 
-                    self.current_text = "THE LIGHTS WENT OUT..."
-                    self.current_is_anomaly = False
-                    self.current_base_rule = "FORCE_LIGHT_ON"
-                    return
+                self.current_text = "THE LIGHTS WENT OUT..."
+                self.current_is_anomaly = False
+                self.current_base_rule = "FORCE_LIGHT_ON"
+                return
 
             # Window anomaly
             if not self.window_anomaly and not self.window_open and random.random() < 0.08:
