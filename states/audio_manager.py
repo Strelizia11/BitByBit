@@ -20,7 +20,8 @@ class AudioManager:
             "door": pygame.mixer.Channel(2),
             "button": pygame.mixer.Channel(3),
             "whisper": pygame.mixer.Channel(4),
-            "jumpscare": pygame.mixer.Channel(5)
+            "jumpscare": pygame.mixer.Channel(5),
+            "ending": pygame.mixer.Channel(6)
 
         }
 
