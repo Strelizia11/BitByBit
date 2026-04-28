@@ -56,12 +56,21 @@ class Game:
             for event in events:
                 if event.type == pygame.QUIT:
                     self.running = False
+
+                # ── Pause/resume music on window focus ──
+                if event.type == pygame.WINDOWFOCUSLOST:
+                    pygame.mixer.music.pause()
+                if event.type == pygame.WINDOWFOCUSGAINED:
+                    pygame.mixer.music.unpause()
+
                 self.current_state.handle_event(event)
+
             self.current_state.update(dt)
             self.current_state.draw(self.screen)
             pygame.display.flip()
         pygame.quit()
         sys.exit()
+
 
 
 if __name__ == "__main__":
