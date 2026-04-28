@@ -104,7 +104,7 @@ class EndingState(BaseState):
             "for ch in first_line:",
             "    sys.stdout.write(ch)",
             "    sys.stdout.flush()",
-            "    time.sleep(0.10)",
+            "    time.sleep(0.05)",
             "sys.stdout.write('\\n')",
             "sys.stdout.write('\\n'.join(lines[1:]))",
             "sys.stdout.flush()",

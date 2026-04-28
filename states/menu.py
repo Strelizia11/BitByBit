@@ -78,7 +78,7 @@ class MenuState(BaseState):
             self._music_delay = 0.0  # no delay on first open
         else:
             self._music_started = False
-            self._music_delay = 7.5  # delay when returning mid-game
+            self._music_delay = 9.5  # delay when returning mid-game
 
     def _load_gif(self, path):
         try:
