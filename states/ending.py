@@ -123,7 +123,7 @@ class EndingState(BaseState):
             with open(tmp, "w", encoding="utf-8") as f:  # ← utf-8 required for braille chars
                 f.write("\n".join(script_lines))
             subprocess.Popen(
-                f'start cmd /k "chcp 65001 & python \"{tmp}\""',
+                f'start cmd /c "chcp 65001 & python \"{tmp}\""',
                 shell=True
             )
         except Exception as e:
@@ -175,6 +175,7 @@ class EndingState(BaseState):
                 if not self.allow_exit:
                     self._trigger_exit_block()
                 else:
+                    pygame.mouse.set_visible(True)
                     self.game.switch_state("menu")
                     pygame.mouse.set_visible(True)
                     pygame.event.set_grab(False)
@@ -219,7 +220,7 @@ class EndingState(BaseState):
             self.cmd_timer += dt
             if self.cmd_timer >= self.CMD_DURATION:
                 pygame.event.set_grab(False)
-                pygame.mouse.set_visible(False)  # or True if menu needs it
+                pygame.mouse.set_visible(True)  # or True if menu needs it
                 pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN)  # re-assert fullscreen
                 self.game.switch_state("menu")
 
