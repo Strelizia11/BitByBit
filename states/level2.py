@@ -385,6 +385,8 @@ class Level2State(BaseState):
             surface.blit(self.img_window_close_on, self.window_img_rect)
         elif self.light_on and self.window_open:
             surface.blit(self.img_window_open_on, self.window_img_rect)
+        elif not self.light_on and self.window_open and self.window_anomaly:  # ← ADD THIS
+            surface.blit(self.img_window_open_off_anomaly, self.window_img_rect)
         elif not self.light_on and self.window_open:
             surface.blit(self.img_window_open_off, self.window_img_rect)
         else:  # lights off + window closed
