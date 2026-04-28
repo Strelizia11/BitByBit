@@ -152,7 +152,9 @@ class GameState(BaseState):
     def handle_event(self, event):
         if self.trans_phase != TRANS_IDLE:
             return
-
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_F9:  # press F9 to skip straight to ending
+                self.game.switch_state("ending")
         if self.game_over:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:

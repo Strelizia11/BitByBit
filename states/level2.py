@@ -167,7 +167,8 @@ class Level2State(BaseState):
         self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
 
         self.instr_sys = InstructionSystem(total_rounds=16)
-        self.instr_sys.reset()
+        self.current_round=15
+        """self.instr_sys.reset()"""
 
         # --- timer & tracking ---
         self.round_time_limit = 6.0

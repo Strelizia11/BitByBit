@@ -1,6 +1,8 @@
 import pygame
 import random
 import math
+import subprocess
+import os
 from states.base import BaseState
 from states.audio_manager import AudioManager
 from utils import (
@@ -13,6 +15,9 @@ from utils import (
 SCALE = SCREEN_H / 600
 
 audio = AudioManager()
+
+
+
 
 SZ_MAIN = max(24, int(42 * SCALE))
 SZ_SUB  = max(16, int(26 * SCALE))
@@ -29,26 +34,66 @@ class EndingState(BaseState):
     def on_enter(self, **kwargs):
         pygame.mouse.set_visible(False)
         audio.play("ending", channel="ending", duration=6.5, fadeout=0.5)
+        # removed _spawn_terminal_message() from here
         self.time = 0.0
         self.phase_time = 0.0
 
         self.base_text = "SIMON SAYS YOU CANNOT LEAVE"
-        self.alt_text  = "YOU CANNOT LEAVE"
+        self.alt_text = "YOU CANNOT LEAVE"
 
         self.current_text = self.base_text
         self.intensity = 0.0
 
-        # ── Exit denial system ───────────────────────────────
         self.exit_attempts = 0
         self.exit_block_timer = 0.0
         self.show_block_msg = False
         self.allow_exit = False
 
-        # visuals
+        # ── CMD spawn tracking ───────────────────────────────────
+        self.cmd_spawned = False  # has the cmd window been launched yet?
+        self.cmd_timer = 0.0  # counts up once cmd is spawned
+        self.CMD_DURATION = 5.0  # seconds before returning to game
+
         self._vignette = self._build_vignette()
         self._scanlines = self._build_scanlines()
         self.cracks = self._gen_cracks(20)
 
+    def _spawn_terminal_message(self):
+        """Opens a maximized cmd window, then returns focus to pygame (Windows only)."""
+        message = "SIMON IS WATCHING OVER YOU"
+
+        import ctypes
+        hwnd_pygame = pygame.display.get_wm_info()["window"]  # grab pygame's HWND now
+
+        script_lines = [
+            "import sys, time, ctypes",
+            "hwnd = ctypes.windll.kernel32.GetConsoleWindow()",
+            "ctypes.windll.user32.ShowWindow(hwnd, 3)",
+            "ctypes.windll.user32.SetForegroundWindow(hwnd)",
+            "ctypes.windll.user32.BringWindowToTop(hwnd)",
+            f"msg = {repr(message)}",
+            "for ch in msg:",
+            "    sys.stdout.write(ch)",
+            "    sys.stdout.flush()",
+            "    time.sleep(0.10)",
+            "time.sleep(4)",
+            # ── return focus to pygame ──
+            f"hwnd_game = {hwnd_pygame}",
+            "ctypes.windll.user32.ShowWindow(hwnd_game, 9)",  # SW_RESTORE
+            "ctypes.windll.user32.SetForegroundWindow(hwnd_game)",
+            "ctypes.windll.user32.BringWindowToTop(hwnd_game)",
+        ]
+
+        try:
+            tmp = os.path.join(os.environ.get("TEMP", "."), "_simon_msg.py")
+            with open(tmp, "w") as f:
+                f.write("\n".join(script_lines))
+            subprocess.Popen(
+                f'start cmd /c python "{tmp}"',
+                shell=True
+            )
+        except Exception as e:
+            print(f"[EndingState] Terminal spawn failed: {e}")
     # ── Distortion ───────────────────────────────────────────
     def distort_text(self, text, intensity):
         replacements = {
@@ -102,7 +147,6 @@ class EndingState(BaseState):
         self.time += dt
         self.phase_time += dt
 
-        # handle block timer
         if self.exit_block_timer > 0:
             self.exit_block_timer -= dt
         else:
@@ -129,8 +173,16 @@ class EndingState(BaseState):
             self.intensity = 1.0
             self.current_text = self.distort_text(self.alt_text, 0.9)
 
-        else:
-            self.game.switch_state("menu")
+            # ── Spawn cmd once we're deep into the final phase ──
+            if not self.cmd_spawned:
+                self._spawn_terminal_message()
+                self.cmd_spawned = True
+
+        # ── Count down after cmd spawned, then return to menu ───
+        if self.cmd_spawned:
+            self.cmd_timer += dt
+            if self.cmd_timer >= self.CMD_DURATION:
+                self.game.switch_state("menu")
 
     # ── Draw ─────────────────────────────────────────────────
     def draw(self, surface):
