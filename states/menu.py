@@ -281,7 +281,11 @@ class MenuState(BaseState):
         # ── Credits sections with headers and values ──────────────────────
         sections = [
             ("GAME DEVELOPMENT", ["BitByBit Team"]),
-            ("ART & DESIGN",     ["BitByBit Team"]),
+            ("ART & DESIGN",     [
+                "BitByBit Team: Assets and UI",
+                "ASCII Code Art: Emoji Combos",
+                "Jumpscare video: Vlipsy"
+                ]),
             ("MUSIC & SOUND", [
                 "dragon studio - light switch",
                 "dragon studio - light switch on",
