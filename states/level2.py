@@ -2,6 +2,7 @@ import os
 import math
 import pygame
 import random
+import cv2
 from states.base import BaseState
 from states.audio_manager import AudioManager
 from system.instruction_system import InstructionSystem
@@ -47,6 +48,32 @@ class Level2State(BaseState):
     After completion, returns to menu.
     """
 
+    def _trigger_video_jumpscare(self):
+        if hasattr(self, "playing_video") and self.playing_video:
+            return  # prevent retriggering
+
+        self.game_over = True
+        self.playing_video = True
+
+        # Stop background audio
+        audio.stop_music()
+
+        # Load video
+        self.video = cv2.VideoCapture(resource_path("assets/jumpscare1.mp4"))
+
+        if not self.video.isOpened():
+            print("ERROR: Could not open jumpscare video")
+            self.playing_video = False
+            return
+
+        self.video_frame = None  # initialize frame buffer
+
+        # Optional: reset other states
+        self.death_timer = 0.0
+        self.death_phase = 0
+
+        # Play sound (since OpenCV has no audio)
+        audio.play("jumpscare_sound", channel="jumpscare")
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     def on_enter(self, **kwargs):
         audio.stop_music()
@@ -87,6 +114,9 @@ class Level2State(BaseState):
         self.img_window_close_off = pygame.transform.scale(
             pygame.image.load(resource_path("assets/window-close-off.png")).convert_alpha(),
             (WIN_W, WIN_H))
+        self.img_window_open_off_anomaly = pygame.transform.scale(
+            pygame.image.load(resource_path("assets/window-open-off-anomaly.png")).convert_alpha(),
+            (WIN_W, WIN_H))
 
         # --- door images (all 4 states) — scaled to DOOR_W x DOOR_H ---
         self.img_door_close_on  = pygame.transform.scale(
@@ -100,6 +130,9 @@ class Level2State(BaseState):
             (DOOR_W, DOOR_H))
         self.img_door_close_off = pygame.transform.scale(
             pygame.image.load(resource_path("assets/door-close-off.png")).convert_alpha(),
+            (DOOR_W, DOOR_H))
+        self.img_door_open_off_anomaly = pygame.transform.scale(
+            pygame.image.load(resource_path("assets/door-open-off-anomaly.png")).convert_alpha(),
             (DOOR_W, DOOR_H))
 
         # Rects — window LEFT of switch, door RIGHT of switch
@@ -120,6 +153,8 @@ class Level2State(BaseState):
         # --- light state: START WITH OFF ---
         self.light_on = False
         self.is_clicked = False
+        self.door_anomaly = False
+        self.window_anomaly = False
 
         # --- door state: START WITH CLOSED ---
         self.door_open = False
@@ -130,16 +165,18 @@ class Level2State(BaseState):
         # Click hitbox matches the window image position and size
         self.window_rect = pygame.Rect(WIN_X, WIN_Y, WIN_W, WIN_H)
 
-        self.instr_sys = InstructionSystem(total_rounds=8)
-        self.instr_sys.reset()
+        self.instr_sys = InstructionSystem(total_rounds=16)
+        """self.instr_sys.reset()"""
 
         # --- timer & tracking ---
         self.round_time_limit = 6.0
         self.round_timer = 0.0
         self.clicks_this_round = 0
         self.window_clicks_this_round = 0
+        self.door_clicks_this_round = 0
         self.start_light_state = self.light_on
         self.start_window_state = self.window_open
+        self.start_door_state = self.door_open
 
         self.current_text = ""
         self.current_is_anomaly = False
@@ -181,8 +218,10 @@ class Level2State(BaseState):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.is_clicked = True
 
-            # Window click
             if self.window_rect.collidepoint(event.pos):
+                if self._is_wrong_interaction("window"):
+                    self._trigger_video_jumpscare()
+                    return
                 self.window_open = not self.window_open
                 self.window_clicks_this_round += 1
 
@@ -191,17 +230,24 @@ class Level2State(BaseState):
                 else:
                     audio.play("window_close", channel="window")
 
-            # Door click (NEW)
-            elif self.door_rect.collidepoint(event.pos):
-                self.door_open = not self.door_open
+                if self.window_anomaly:
+                    self.window_anomaly = False
 
-                # Optional sounds (add if you have them)
+            elif self.door_rect.collidepoint(event.pos):
+                if self._is_wrong_interaction("door"):
+                    self._trigger_video_jumpscare()
+                    return
+                self.door_open = not self.door_open
+                self.door_clicks_this_round += 1
+
                 if self.door_open:
                     audio.play("door_open", channel="door")
                 else:
                     audio.play("door_close", channel="door")
 
-            # Switch click
+                if self.door_anomaly:
+                    self.door_anomaly = False
+
             elif self.img_rect.collidepoint(event.pos):
                 self.light_on = not self.light_on
                 self.clicks_this_round += 1
@@ -218,6 +264,47 @@ class Level2State(BaseState):
                 audio.stop_music()
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("menu")
+
+    def _is_wrong_interaction(self, target):
+        should_follow = (
+                (self.start_light_state and not self.current_is_anomaly) or
+                (not self.start_light_state and self.current_is_anomaly)
+        )
+        if not should_follow:
+            return True  # ANY interaction is wrong
+        rule = self.current_base_rule
+
+        # --- DOOR RULES ---
+        if "DOOR" in rule:
+            if target != "door":
+                return True  # clicked wrong object
+
+            if "OPEN" in rule and self.door_open:
+                return True  # already open → wrong
+
+            if "CLOSE" in rule and not self.door_open:
+                return True  # already closed → wrong
+
+            return False  # correct interaction
+
+        # --- WINDOW RULES ---
+        if "WINDOW" in rule:
+            if target != "window":
+                return True
+
+            if "OPEN" in rule and self.window_open:
+                return True
+
+            if "CLOSE" in rule and not self.window_open:
+                return True
+
+            return False
+
+        # --- NON DOOR/WINDOW RULE ---
+        if target in ["door", "window"]:
+            return True
+
+        return False
 
     # ── Update ────────────────────────────────────────────────────────────────
     def update(self, dt):
@@ -260,9 +347,27 @@ class Level2State(BaseState):
             elif self.death_phase == 3 and self.death_timer > 2.0:
                 pygame.mouse.set_visible(True)
                 self.game.switch_state("menu")
+        if hasattr(self, "playing_video") and self.playing_video:
+            ret, frame = self.video.read()
+
+            if not ret:
+                self.video.release()
+                self.playing_video = False
+                pygame.mouse.set_visible(True)
+                self.game.switch_state("menu")
+                return
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (SCREEN_W, SCREEN_H))
+            self.video_frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+            return
 
     # ── Draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface):
+        if hasattr(self, "playing_video") and self.playing_video:
+            if self.video_frame:
+                surface.blit(self.video_frame, (0, 0))
+            return
         # ── Background: swap based on light state ─────────────────────────────
         bg = self.bg_lights_on if self.light_on else self.bg_lights_off
         surface.blit(bg, (0, 0))
@@ -287,10 +392,13 @@ class Level2State(BaseState):
             surface.blit(self.img_door_close_on, self.door_img_rect)
         elif self.light_on and self.door_open:
             surface.blit(self.img_door_open_on, self.door_img_rect)
+        elif not self.light_on and self.door_open and self.door_anomaly:
+            surface.blit(self.img_door_open_off_anomaly, self.door_img_rect)
         elif not self.light_on and self.door_open:
             surface.blit(self.img_door_open_off, self.door_img_rect)
         else:
             surface.blit(self.img_door_close_off, self.door_img_rect)
+
 
         if not self.light_on:
             self._draw_flashlight(surface)
@@ -319,8 +427,41 @@ class Level2State(BaseState):
 
     # ── Internal helpers ──────────────────────────────────────────────────────
     def _load_next_instruction(self):
-        result = self.instr_sys.next_instruction(self.light_on, self.window_open)
+        result = self.instr_sys.next_instruction(self.light_on, self.window_open, self.door_open)
 
+        # ── RANDOM ENTITY EVENT ─────────────────────────────────────
+
+        if not self.light_on:
+            if not self.door_anomaly and not self.door_open and random.random() < 0.08:
+                self.door_open = True
+                self.door_anomaly = True
+                audio.play("door_open", channel="door")
+
+                self.current_text = "QUICK, CLOSE THE DOORS SOMETHING IS COMING"
+                self.current_is_anomaly = False
+                self.current_base_rule = "FORCE_CLOSE_DOOR"
+                return
+            # ── RANDOM LIGHT FAILURE EVENT ─────────────────────────
+            if self.light_on:
+                if random.random() < 0.08:  # 8% chance (adjust if needed)
+                    self.light_on = False
+                    audio.play("switch_off", channel="switch")
+
+                    self.current_text = "THE LIGHTS WENT OUT..."
+                    self.current_is_anomaly = False
+                    self.current_base_rule = "FORCE_LIGHT_ON"
+                    return
+
+            # Window anomaly
+            if not self.window_anomaly and not self.window_open and random.random() < 0.08:
+                self.window_open = True
+                self.window_anomaly = True
+                audio.play("window_open", channel="window")
+
+                self.current_text = "QUICK, CLOSE THE WINDOW SOMETHING IS COMING"
+                self.current_is_anomaly = False
+                self.current_base_rule = "FORCE_CLOSE_WINDOW"
+                return
         if result is None:
             # All 8 rounds done successfully → return to menu
             self.game_over = True
@@ -339,11 +480,14 @@ class Level2State(BaseState):
             self.current_is_anomaly = result[1]
             self.current_base_rule = result[2]
 
+
         self.round_timer = 0.0
         self.clicks_this_round = 0
         self.window_clicks_this_round = 0
+        self.door_clicks_this_round = 0
         self.start_light_state = self.light_on
         self.start_window_state = self.window_open
+        self.start_door_state = self.door_open
         self.instr_alpha = 0.0
         self.instr_pulse = 0.0
 
@@ -354,7 +498,9 @@ class Level2State(BaseState):
             self.start_light_state,
             self.clicks_this_round,
             self.start_window_state,
-            self.window_clicks_this_round
+            self.window_clicks_this_round,
+            self.start_door_state,
+            self.door_clicks_this_round
         )
 
         if success:
